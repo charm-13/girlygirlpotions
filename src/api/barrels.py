@@ -21,38 +21,46 @@ class Barrel(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
-    # adds total ml from order, and takes away what was spent
-    cost = 0 
+    """ """
     green_ml = 0
     for barrel in barrels_delivered:
-        cost += barrel.price
-        green_ml += barrel.ml_per_barrel
-    
-    with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold -= cost SET num_green_ml += green_ml"))
-    """ """
+        if barrel.potion_type == [0, 100, 0, 0]: 
+            green_ml += barrel.ml_per_barrel
+    if green_ml > 0:
+        with db.engine.begin() as connection:
+            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml += :green_ml"), 
+                               {"green_ml": green_ml})
+
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
-    return result
+    return {"status": "success", "green_ml_delivered": green_ml}
 
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
-    with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory"))
-        
     print(wholesale_catalog)
-
-    quant = 0    
+    
+    with db.engine.begin() as connection:
+        result = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).mappings()
+        inventory = result.fetchone()
+        num_green_ml = inventory["num_green_ml"]
         
-    if result < 10:
-        quant += 1
-
-    return [
-        {
-            "sku": "SMALL_GREEN_BARREL",
-            "quantity": quant,
-        }
-    ]
+    plan = []
+    
+    if num_green_ml < 10:
+        smallest = None
+        
+        for barrel in wholesale_catalog:
+            if barrel.potion_type == [0, 100, 0, 0]:
+                if not smallest:
+                    smallest = barrel
+                elif barrel.ml_per_barrel < smallest.ml_per_barrel:
+                    smallest = barrel                    
+        
+        if smallest:
+            plan.append({"sku": smallest.sku, "quantity": 1})
+        
+    print(f"Wholesale purchase plan: {plan}")
+    return plan
 
