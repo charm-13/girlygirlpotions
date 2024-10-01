@@ -93,10 +93,10 @@ def create_cart(new_cart: Customer):
     """ """
     global cart_id
     cart_id += 1
-    all_carts[cart_id] = new_cart
+    all_carts[cart_id] = {"customer": new_cart, "items": {}}
     print(f"cart id: {cart_id}, new cart: {new_cart}")
     
-    return {"cart_id": cart_id}
+    return { "cart_id": str(cart_id) }
 
 
 class CartItem(BaseModel):
@@ -112,11 +112,8 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
         return {"success": False}
     
     cart = all_carts[cart_id]
-    
-    if not hasattr(cart, 'items'):
-        cart.items = {}
         
-    cart.items[item_sku] = cart_item.quantity
+    cart["items"]["item_sku"] = cart_item.quantity
 
     return {"success": True}
 
@@ -131,14 +128,16 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     total_gold_paid = 0
     # catalog =  #retrieves the catalog
     
-    if cart_id in all_carts: # make sure the cart exists
+    if cart_id in all_carts:
         cart = all_carts[cart_id]
-        if hasattr(cart, 'items') and cart.items: 
-            for item_sku, item_quantity in cart.items.items():
-                total_potions_bought += item_quantity
-                total_gold_paid += item_quantity*50 #*catalog[item_sku]["price"]
+        for item_quantity in cart["items"].items():
+            print(item_quantity)
+            total_potions_bought += item_quantity
+            total_gold_paid += item_quantity*50 #*catalog["item_sku"]["price"]
             
-    cart.items.clear()
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = num_green_potions - total_potions_bought SET gold = gold + :total_gold_paid"),
+                           {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid})
 
     return {"total_potions_bought": total_potions_bought,
             "total_gold_paid": total_gold_paid}

@@ -15,14 +15,17 @@ def get_catalog():
         inventory = result.fetchone()
         num_green_potions = inventory["num_green_potions"]
         
-    catalog = [
+    catalog = []
+    
+    if num_green_potions > 0:
+        catalog.append(
             {
                 "sku": "GREEN_POTION_0",
                 "name": "green potion",
-                "quantity": str(num_green_potions),
-                "price": "50",
+                "quantity": int(num_green_potions),
+                "price": 50,
                 "potion_type": [0, 100, 0, 0],
             }
-        ]
+        )
 
     return catalog
