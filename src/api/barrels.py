@@ -46,7 +46,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")).mappings()
         inventory = result.fetchone()
-        print(inventory)
         num_green_potions = inventory["num_green_potions"]
         gold = inventory["gold"]
         
@@ -61,7 +60,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     smallest = barrel               
         
         if smallest and smallest.price <= gold:
-            plan.append({"sku": smallest.sku, "quantity": 1})
+            plan.append({"sku": smallest.sku, "quantity": "1"})
         
     print(f"Wholesale purchase plan: {plan}")
     return plan
