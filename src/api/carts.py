@@ -131,7 +131,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     if cart_id in all_carts:
         cart = all_carts[cart_id]
         for item_sku, item_quantity in cart["items"].items():
-            print(item_quantity)
             total_potions_bought += item_quantity
             total_gold_paid += item_quantity*50 #*catalog["item_sku"]["price"]
             

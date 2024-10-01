@@ -26,8 +26,8 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     gold_paid = 0
     for barrel in barrels_delivered:
         if barrel.potion_type == [0, 1, 0, 0]: 
-            green_ml += barrel.ml_per_barrel*barrel.quantity
-            gold_paid += barrel.price*barrel.quantity
+            green_ml += barrel.ml_per_barrel #*barrel.quantity
+            gold_paid += barrel.price #*barrel.quantity
     if green_ml > 0:
         with db.engine.begin() as connection:
             connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = num_green_ml + :green_ml, gold = gold - :gold_paid"),
