@@ -11,6 +11,9 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+cart_id = 0
+all_carts = {}
+
 class search_sort_options(str, Enum):
     customer_name = "customer_name"
     item_sku = "item_sku"
@@ -29,8 +32,6 @@ def search_orders(
     sort_col: search_sort_options = search_sort_options.timestamp,
     sort_order: search_sort_order = search_sort_order.desc,
 ):
-    # with db.engine.begin() as connection:
-    #     result = connection.execute(sqlalchemy.text(sql_to_execute))
     """
     Search for cart line items by customer name and/or potion sku.
 
@@ -81,19 +82,21 @@ def post_visits(visit_id: int, customers: list[Customer]):
     """
     Which customers visited the shop today?
     """
-    # with db.engine.begin() as connection:
-    #     result = connection.execute(sqlalchemy.text(sql_to_execute))
-    # print(customers)
+    print(f"customers visited: {customers}")
+    print(f"visit_id: {visit_id}")
 
-    return "OK"
+    return { "success": True }
 
 
 @router.post("/")
 def create_cart(new_cart: Customer):
-    # with db.engine.begin() as connection:
-    #     result = connection.execute(sqlalchemy.text(sql_to_execute))
     """ """
-    return {"cart_id": 1}
+    global cart_id
+    cart_id += 1
+    all_carts[cart_id] = new_cart
+    print(f"cart id: {cart_id}, new cart: {new_cart}")
+    
+    return {"cart_id": cart_id}
 
 
 class CartItem(BaseModel):
@@ -102,11 +105,20 @@ class CartItem(BaseModel):
 
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
-    # with db.engine.begin() as connection:
-    #     result = connection.execute(sqlalchemy.text(sql_to_execute))
     """ """
+    print(f"cart_id: {cart_id}, item_sku: {item_sku}, cart_item: {cart_item}")
+    
+    if cart_id not in all_carts:
+        return {"success": False}
+    
+    cart = all_carts[cart_id]
+    
+    if not hasattr(cart, 'items'):
+        cart.items = {}
+        
+    cart.items[item_sku] = cart_item.quantity
 
-    return "OK"
+    return {"success": True}
 
 
 class CartCheckout(BaseModel):
@@ -114,8 +126,19 @@ class CartCheckout(BaseModel):
 
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
-    # with db.engine.begin() as connection:
-    #     result = connection.execute(sqlalchemy.text(sql_to_execute))
     """ """
+    total_potions_bought = 0
+    total_gold_paid = 0
+    # catalog =  #retrieves the catalog
+    
+    if cart_id in all_carts: # make sure the cart exists
+        cart = all_carts[cart_id]
+        if hasattr(cart, 'items') and cart.items: 
+            for item_sku, item_quantity in cart.items.items():
+                total_potions_bought += item_quantity
+                total_gold_paid += item_quantity*50 #*catalog[item_sku]["price"]
+            
+    cart.items.clear()
 
-    return {"total_potions_bought": 1, "total_gold_paid": 50}
+    return {"total_potions_bought": total_potions_bought,
+            "total_gold_paid": total_gold_paid}

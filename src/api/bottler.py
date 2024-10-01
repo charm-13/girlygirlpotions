@@ -51,7 +51,7 @@ def get_bottle_plan():
     plan = [
         {
             "potion_type": [0, 100, 0, 0],
-            "quantity": green_potions_to_bottle,
+            "quantity": str(green_potions_to_bottle),
         }
     ]
 

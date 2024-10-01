@@ -23,17 +23,19 @@ class Barrel(BaseModel):
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
     green_ml = 0
+    gold_paid = 0
     for barrel in barrels_delivered:
         if barrel.potion_type == [0, 100, 0, 0]: 
-            green_ml += barrel.ml_per_barrel
+            green_ml += barrel.ml_per_barrel*barrel.quantity
+            gold_paid += barrel.price*barrel.quantity
     if green_ml > 0:
         with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml += :green_ml"), 
-                               {"green_ml": green_ml})
+            connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml += :green_ml SET gold -= :gold_paid"), 
+                               {"green_ml": green_ml}, {"gold_paid": gold_paid})
 
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
-    return {"status": "success", "green_ml_delivered": green_ml}
+    return "OK"
 
 # Gets called once a day
 @router.post("/plan")
@@ -42,23 +44,23 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
     
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).mappings()
+        result = connection.execute(sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")).mappings()
         inventory = result.fetchone()
-        num_green_ml = inventory["num_green_ml"]
+        print(inventory)
+        num_green_potions = inventory["num_green_potions"]
+        gold = inventory["gold"]
         
     plan = []
     
-    if num_green_ml < 10:
+    if num_green_potions < 10:
         smallest = None
         
         for barrel in wholesale_catalog:
-            if barrel.potion_type == [0, 100, 0, 0]:
-                if not smallest:
-                    smallest = barrel
-                elif barrel.ml_per_barrel < smallest.ml_per_barrel:
-                    smallest = barrel                    
+            if barrel.potion_type == [0, 1, 0, 0]:
+                if not smallest or barrel.ml_per_barrel < smallest.ml_per_barrel:
+                    smallest = barrel               
         
-        if smallest:
+        if smallest and smallest.price <= gold:
             plan.append({"sku": smallest.sku, "quantity": 1})
         
     print(f"Wholesale purchase plan: {plan}")
