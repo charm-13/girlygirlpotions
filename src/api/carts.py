@@ -96,7 +96,7 @@ def create_cart(new_cart: Customer):
     all_carts[cart_id] = {"customer": new_cart, "items": {}}
     print(f"cart id: {cart_id}, new cart: {new_cart}")
     
-    return { "cart_id": str(cart_id) }
+    return { "cart_id": cart_id }
 
 
 class CartItem(BaseModel):
