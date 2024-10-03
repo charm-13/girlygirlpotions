@@ -44,14 +44,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
     
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")).mappings()
+        result = connection.execute(sqlalchemy.text("SELECT num_potions, gold FROM global_inventory")).mappings()
         inventory = result.fetchone()
-        num_green_potions = inventory["num_green_potions"]
+        num_potions = inventory["num_potions"]
         gold = inventory["gold"]
         
     plan = []
     
-    if num_green_potions < 10:
+    if num_potions < 10:
         smallest = None
         
         for barrel in wholesale_catalog:
