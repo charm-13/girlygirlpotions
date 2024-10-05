@@ -8,24 +8,30 @@ router = APIRouter()
 @router.get("/catalog/", tags=["catalog"])
 def get_catalog():
     """
-    Each unique item combination must have only a single price.
+    Provides all available potions.
     """
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT num_potions FROM global_inventory")).mappings()
-        inventory = result.fetchone()
-        num_potions = inventory["num_potions"]
+        inv_result = connection.execute(
+            sqlalchemy.text("SELECT sku, name, quantity, price FROM potion_inventory")
+        ).mappings()
+        mix_result = connection.execute(
+            sqlalchemy.text("SELECT red_amt, green_amt, blue_amt, dark_amt FROM potion_mixes")
+        ).mappings()
         
     catalog = []
     
-    if num_potions > 0:
-        catalog.append(
-            {
-                "sku": "GREEN_POTION_0",
-                "name": "green potion",
-                "quantity": int(num_potions),
-                "price": 50,
-                "potion_type": [0, 100, 0, 0],
-            }
-        )
-
+    for potion in inv_result:
+        mix = mix_result.fetchone()
+        
+        if potion["quantity"] > 0:
+            catalog.append(
+                {
+                    "sku": potion["sku"],
+                    "name": potion["name"],
+                    "quantity": potion["quantity"],
+                    "price": potion["price"],
+                    "potion_type": [mix["red_amt"], mix["green_amt"], mix["blue_amt"], mix["dark_amt"]]
+                }
+            )
+            
     return catalog
