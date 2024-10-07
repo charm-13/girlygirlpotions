@@ -114,7 +114,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     
     cart = all_carts[cart_id]
         
-    cart["items"]["item_sku"] = cart_item.quantity
+    cart["items"][item_sku] = cart_item.quantity
 
     return {"success": True}
 
@@ -127,6 +127,10 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"payment: {cart_checkout.payment}")
     total_potions_bought = 0
+    total_red = 0
+    total_green = 0
+    total_blue = 0
+    total_dark = 0
     total_gold_paid = 0
     # catalog =  #retrieves the catalog
     
@@ -135,11 +139,36 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         cart = all_carts[cart_id]
         for item_sku, item_quantity in cart["items"].items():
             total_potions_bought += item_quantity
+            if item_sku == "RED_POTION":
+                total_red += 1
+                
+            if item_sku == "GREEN_POTION":
+                total_green += 1
+                
+            if item_sku == "BLUE_POTION":
+                total_blue += 1
+                
+            if item_sku == "DARK_POTION":
+                total_dark += 1
+                
             total_gold_paid += item_quantity*50 #*catalog["item_sku"]["price"]
             
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_potions = num_potions - :total_potions_bought, gold = gold + :total_gold_paid"),
-                           {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid})
+        connection.execute(sqlalchemy.text("UPDATE global_inventory \
+                                            SET num_potions = num_potions - :total_potions_bought, \
+                                                gold = gold + :total_gold_paid"),
+                        {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid})
+        connection.execute(sqlalchemy.text("UPDATE potion_inventory \
+                                            SET quantity = \
+                                                CASE \
+                                                WHEN sku = 'RED_POTION' THEN quantity - :red_potions \
+                                                WHEN sku = 'GREEN_POTION' THEN quantity - :green_potions \
+                                                WHEN sku = 'BLUE_POTION' THEN quantity - :blue_potions \
+                                                WHEN sku = 'DARK_POTION' THEN quantity - :dark_potions \
+                                                END"),
+                        {"red_potions": total_red, "green_potions": total_green, "blue_potions": total_blue, "dark_potions": total_dark})
+        
+    print(f"total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid}")
 
     return {"total_potions_bought": total_potions_bought,
             "total_gold_paid": total_gold_paid}
