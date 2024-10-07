@@ -91,6 +91,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
+    # TODO: create a new table to handle the carts
     global cart_id
     cart_id += 1
     all_carts[cart_id] = {"customer": new_cart, "items": {}}
@@ -124,10 +125,12 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
+    print(f"payment: {cart_checkout.payment}")
     total_potions_bought = 0
     total_gold_paid = 0
     # catalog =  #retrieves the catalog
     
+    # calculate how much they bought and how much they owe me :)
     if cart_id in all_carts:
         cart = all_carts[cart_id]
         for item_sku, item_quantity in cart["items"].items():
