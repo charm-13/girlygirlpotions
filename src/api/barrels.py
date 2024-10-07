@@ -97,8 +97,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         print(potion_result)
         gold = gold_result.fetchone()["gold"]
     
-    # Determine need 
-    ml_per_potion = 100     # TO ASK PIERCE: does the ml per potion have to be 100? Can I change that amount?
+    # Determine need
     ml_needed = {"red": 0, "green": 0, "blue": 0, "dark": 0}  # red, green, blue, dark
         
     for potion in potion_result:
