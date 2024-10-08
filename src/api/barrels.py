@@ -115,12 +115,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     plan = []
     budget = gold
     
-    for type, ml_need in ml_needed.items():
+    for type, ml_need in priority.items():
         if ml_need <= 0:
             continue
           
         for barrel in sorted_catalog[type]:
+            print(f"barrel: {barrel}")
             if barrel.quantity <= 0:
+                continue
+            
+            if barrel.price > 150: # temp: don't buy the most expensive barrels
                 continue
             
             max_afford = budget // barrel.price
