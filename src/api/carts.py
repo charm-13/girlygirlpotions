@@ -140,16 +140,16 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         for item_sku, item_quantity in cart["items"].items():
             total_potions_bought += item_quantity
             if item_sku == "RED_POTION":
-                total_red += 1
+                total_red += item_quantity
                 
             if item_sku == "GREEN_POTION":
-                total_green += 1
+                total_green += item_quantity
                 
             if item_sku == "BLUE_POTION":
-                total_blue += 1
+                total_blue += item_quantity
                 
             if item_sku == "DARK_POTION":
-                total_dark += 1
+                total_dark += item_quantity
                 
             total_gold_paid += item_quantity*50 #*catalog["item_sku"]["price"]
             
