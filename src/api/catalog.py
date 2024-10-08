@@ -12,19 +12,16 @@ def get_catalog():
     """
     with db.engine.begin() as connection:
         inv_result = connection.execute(
-            sqlalchemy.text("SELECT sku, name, quantity, price " 
-                            "FROM potion_inventory")
-        ).mappings()
-        mix_result = connection.execute(
-            sqlalchemy.text("SELECT red_amt, green_amt, blue_amt, dark_amt "
-                            "FROM potion_mixes")
+            sqlalchemy.text("SELECT potion_inventory.sku, name, quantity, price, potion_mixes.red_amt, \
+                                    potion_mixes.green_amt, potion_mixes.blue_amt, potion_mixes.dark_amt \
+                            FROM potion_inventory \
+                            JOIN potion_mixes ON potion_inventory.sku = potion_mixes.sku")
         ).mappings()
         
     catalog = []
     
     for potion in inv_result:
-        mix = mix_result.fetchone()
-        potion_type = [mix["red_amt"], mix["green_amt"], mix["blue_amt"], mix["dark_amt"]]
+        potion_type = [potion["red_amt"], potion["green_amt"], potion["blue_amt"], potion["dark_amt"]]
         
         if potion["quantity"] > 0:
             catalog.append(
@@ -33,7 +30,7 @@ def get_catalog():
                     "name": potion["name"],
                     "quantity": potion["quantity"],
                     "price": potion["price"],
-                    "potion_type": potion_type
+                    "potion_type": [potion_type]
                 }
             )
             
