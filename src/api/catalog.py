@@ -30,7 +30,7 @@ def get_catalog():
                     "name": potion["name"],
                     "quantity": potion["quantity"],
                     "price": potion["price"],
-                    "potion_type": [potion_type]
+                    "potion_type": potion_type
                 }
             )
             
