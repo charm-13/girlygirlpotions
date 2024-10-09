@@ -124,23 +124,20 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if barrel.quantity <= 0:
                 continue
             
-            if barrel.price > 150: # temp: don't buy the most expensive barrels
+            if gold < 500 and barrel.price > 150:
                 continue
             
             max_afford = budget // barrel.price
             if max_afford <= 0:
                 continue
             
-            max_purchase = min(max_afford, barrel.quantity)
+            max_purchase = 1
             barrels_needed = (ml_need + barrel.ml_per_barrel - 1) // barrel.ml_per_barrel
             purchase_amt = min(max_purchase, barrels_needed)
-            if purchase_amt <= 0:
-                continue
-            
-            plan.append({"sku": barrel.sku, "quantity": purchase_amt})
-            
-            budget -= barrel.price*purchase_amt
-
+            if purchase_amt > 0:
+                plan.append({"sku": barrel.sku, "quantity": purchase_amt})
+                budget -= barrel.price*purchase_amt
+                break
         
     print(f"Wholesale purchase plan: {plan}")
     return plan
