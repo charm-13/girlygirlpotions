@@ -55,7 +55,6 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                             {"red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml, "gold_paid": gold_paid})
 
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
-
     return "OK"
 
 # Gets called once a day

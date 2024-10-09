@@ -23,7 +23,8 @@ def get_inventory():
         num_potions = inv["num_potions"]
         total_ml = inv["num_red_ml"]+inv["num_green_ml"]+inv["num_blue_ml"]+inv["num_dark_ml"]
         gold = inv["gold"]
-    
+        
+    print(f"Inventory -- num potions: {num_potions}, ml in barrels: {total_ml}, gold: {gold}")
     return {"number_of_potions": num_potions, "ml_in_barrels": total_ml, "gold": gold}
 
 # Gets called once a day

@@ -34,6 +34,5 @@ def get_catalog():
                 }
             )
             
-    print(f"Catalog: {catalog}")
-            
+    print(f"Catalog: {catalog}")        
     return catalog

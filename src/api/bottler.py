@@ -79,7 +79,6 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                             "dark_ml_used": dark_ml_used})
         
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
-
     return "OK"
 
 @router.post("/plan")
@@ -135,7 +134,8 @@ def get_bottle_plan():
                 "quantity": dark_potions_to_bottle,
             }
         )
-
+        
+    print(f"Bottle plan: {plan}")
     return plan
 
 if __name__ == "__main__":

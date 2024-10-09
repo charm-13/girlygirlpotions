@@ -115,7 +115,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     cart = all_carts[cart_id]
         
     cart["items"][item_sku] = cart_item.quantity
-
+    print(f"Added {cart_item.quantity} {item_sku} to cart {cart_id}")
     return {"success": True}
 
 
@@ -125,7 +125,6 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    print(f"payment: {cart_checkout.payment}")
     total_potions_bought = 0
     total_red = 0
     total_green = 0
@@ -168,7 +167,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                                                 END"),
                         {"red_potions": total_red, "green_potions": total_green, "blue_potions": total_blue, "dark_potions": total_dark})
         
-    print(f"total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid}")
-
+    print(f"for cart {cart_id} -- total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid} with payment: {cart_checkout.payment}")
     return {"total_potions_bought": total_potions_bought,
             "total_gold_paid": total_gold_paid}
