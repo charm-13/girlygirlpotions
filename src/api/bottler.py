@@ -150,6 +150,7 @@ def get_bottle_plan():
             }
         )
         
+    print(f"Potions to bottle -- red: {red_potions_to_bottle}, green: {green_potions_to_bottle}, blue: {blue_potions_to_bottle}, dark: {dark_potions_to_bottle}")
     print(f"Bottle plan: {plan}")
     return plan
 
