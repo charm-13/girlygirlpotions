@@ -88,9 +88,10 @@ def get_bottle_plan():
     """
     with db.engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory")
+            sqlalchemy.text("SELECT num_potions, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory")
             ).mappings()
         inventory = result.fetchone()
+        num_potions = inventory["num_potions"]
         num_red_ml = inventory["num_red_ml"]
         num_green_ml = inventory["num_green_ml"]
         num_blue_ml = inventory["num_blue_ml"]
@@ -98,9 +99,14 @@ def get_bottle_plan():
         
     plan = []
     ml_per_potion = 100
+    max_potions = 50
+    max_potions_to_bottle = max_potions - num_potions
     
     red_potions_to_bottle = num_red_ml // ml_per_potion
     if red_potions_to_bottle > 0:
+        if red_potions_to_bottle > max_potions_to_bottle:
+            red_potions_to_bottle = max_potions_to_bottle
+            max_potions_to_bottle = 0
         plan.append(
             {
                 "potion_type": [100, 0, 0, 0],
@@ -110,6 +116,9 @@ def get_bottle_plan():
         
     green_potions_to_bottle = num_green_ml // ml_per_potion
     if green_potions_to_bottle > 0:
+        if green_potions_to_bottle > max_potions_to_bottle:
+            green_potions_to_bottle = max_potions_to_bottle
+            max_potions_to_bottle = 0
         plan.append(
             {
                 "potion_type": [0, 100, 0, 0],
@@ -119,6 +128,9 @@ def get_bottle_plan():
     
     blue_potions_to_bottle = num_blue_ml // ml_per_potion
     if blue_potions_to_bottle > 0:
+        if blue_potions_to_bottle > max_potions_to_bottle:
+            blue_potions_to_bottle = max_potions_to_bottle
+            max_potions_to_bottle = 0
         plan.append(
             {
                 "potion_type": [0, 0, 100, 0],
@@ -128,6 +140,9 @@ def get_bottle_plan():
     
     dark_potions_to_bottle = num_dark_ml // ml_per_potion
     if dark_potions_to_bottle > 0:
+        if dark_potions_to_bottle > max_potions_to_bottle:
+            dark_potions_to_bottle = max_potions_to_bottle
+            max_potions_to_bottle = 0
         plan.append(
             {
                 "potion_type": [0, 0, 0, 100],

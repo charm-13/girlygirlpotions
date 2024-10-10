@@ -132,7 +132,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     total_dark = 0
     total_gold_paid = 0
     # catalog =  #retrieves the catalog
-    
+        
     # calculate how much they bought and how much they owe me :)
     if cart_id in all_carts:
         cart = all_carts[cart_id]
@@ -140,17 +140,20 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             total_potions_bought += item_quantity
             if item_sku == "RED_POTION":
                 total_red += item_quantity
+                total_gold_paid += item_quantity*50
                 
             if item_sku == "GREEN_POTION":
                 total_green += item_quantity
+                total_gold_paid += item_quantity*50
                 
             if item_sku == "BLUE_POTION":
                 total_blue += item_quantity
+                total_gold_paid += item_quantity*60
                 
             if item_sku == "DARK_POTION":
                 total_dark += item_quantity
+                total_gold_paid += item_quantity*70
                 
-            total_gold_paid += item_quantity*50 #*catalog["item_sku"]["price"]
             
     with db.engine.begin() as connection:
         connection.execute(sqlalchemy.text("UPDATE global_inventory \
