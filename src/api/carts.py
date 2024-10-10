@@ -112,6 +112,22 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     if cart_id not in all_carts:
         return {"success": False}
     
+    with db.engine.begin() as connection:
+    # assume there is a row for each potion type
+        connection.execute(
+            sqlalchemy.text("UPDATE potion_inventory \
+                            SET quantity = \
+                                CASE \
+                                WHEN sku = 'RED_POTION' THEN quantity - :red_potions \
+                                WHEN sku = 'GREEN_POTION' THEN quantity - :green_potions \
+                                WHEN sku = 'BLUE_POTION' THEN quantity - :blue_potions \
+                                WHEN sku = 'DARK_POTION' THEN quantity - :dark_potions \
+                                END"),
+                            {"red_potions": cart_item.quantity, 
+                            "green_potions": cart_item.quantity, 
+                            "blue_potions": cart_item.quantity, 
+                            "dark_potions": cart_item.quantity})
+
     cart = all_carts[cart_id]
         
     cart["items"][item_sku] = cart_item.quantity
@@ -126,10 +142,6 @@ class CartCheckout(BaseModel):
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     total_potions_bought = 0
-    total_red = 0
-    total_green = 0
-    total_blue = 0
-    total_dark = 0
     total_gold_paid = 0
     # catalog =  #retrieves the catalog
         
@@ -139,19 +151,15 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         for item_sku, item_quantity in cart["items"].items():
             total_potions_bought += item_quantity
             if item_sku == "RED_POTION":
-                total_red += item_quantity
                 total_gold_paid += item_quantity*50
                 
             if item_sku == "GREEN_POTION":
-                total_green += item_quantity
                 total_gold_paid += item_quantity*50
                 
             if item_sku == "BLUE_POTION":
-                total_blue += item_quantity
                 total_gold_paid += item_quantity*60
                 
             if item_sku == "DARK_POTION":
-                total_dark += item_quantity
                 total_gold_paid += item_quantity*70
                 
             
@@ -160,15 +168,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                                             SET num_potions = num_potions - :total_potions_bought, \
                                                 gold = gold + :total_gold_paid"),
                         {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid})
-        connection.execute(sqlalchemy.text("UPDATE potion_inventory \
-                                            SET quantity = \
-                                                CASE \
-                                                WHEN sku = 'RED_POTION' THEN quantity - :red_potions \
-                                                WHEN sku = 'GREEN_POTION' THEN quantity - :green_potions \
-                                                WHEN sku = 'BLUE_POTION' THEN quantity - :blue_potions \
-                                                WHEN sku = 'DARK_POTION' THEN quantity - :dark_potions \
-                                                END"),
-                        {"red_potions": total_red, "green_potions": total_green, "blue_potions": total_blue, "dark_potions": total_dark})
         
     print(f"for cart {cart_id} -- total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid} with payment: {cart_checkout.payment}")
     return {"total_potions_bought": total_potions_bought,
