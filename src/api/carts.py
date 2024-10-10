@@ -116,17 +116,9 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     # assume there is a row for each potion type
         connection.execute(
             sqlalchemy.text("UPDATE potion_inventory \
-                            SET quantity = \
-                                CASE \
-                                WHEN sku = 'RED_POTION' THEN quantity - :red_potions \
-                                WHEN sku = 'GREEN_POTION' THEN quantity - :green_potions \
-                                WHEN sku = 'BLUE_POTION' THEN quantity - :blue_potions \
-                                WHEN sku = 'DARK_POTION' THEN quantity - :dark_potions \
-                                END"),
-                            {"red_potions": cart_item.quantity, 
-                            "green_potions": cart_item.quantity, 
-                            "blue_potions": cart_item.quantity, 
-                            "dark_potions": cart_item.quantity})
+                            SET quantity = quantity - :cart_quantity \
+                            WHERE sku = :item_sku"),
+                            {"cart_quantity": cart_item.quantity, "item_sku": item_sku})
 
     cart = all_carts[cart_id]
         
