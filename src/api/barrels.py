@@ -87,14 +87,21 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     # Logic: Buy a barrel for each type that has less than 10 potions
     # Give priority to the type with the most need
     with db.engine.begin() as connection:
-        gold_result = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).mappings()
+        result = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml \
+                                                        FROM global_inventory")).mappings()
         potion_result = connection.execute(
             sqlalchemy.text("SELECT quantity, potion_mixes.red_amt, potion_mixes.green_amt, potion_mixes.blue_amt, potion_mixes.dark_amt \
                             FROM potion_inventory \
                             JOIN potion_mixes ON potion_inventory.sku = potion_mixes.sku")
         ).mappings()
+        inventory = result.fetchone()
         print(potion_result)
-        gold = gold_result.fetchone()["gold"]
+        gold = inventory["gold"]
+        
+        total_red = inventory["num_red_ml"]
+        total_green = inventory["num_green_ml"]
+        total_blue = inventory["num_blue_ml"]
+        total_dark = inventory["num_dark_ml"]
     
     # Determine need
     ml_needed = {"red": 0, "green": 0, "blue": 0, "dark": 0}  # red, green, blue, dark
@@ -106,6 +113,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         ml_needed["green"] += potion["green_amt"]*num_potions_needed
         ml_needed["blue"] += potion["blue_amt"]*num_potions_needed
         ml_needed["dark"] += potion["dark_amt"]*num_potions_needed
+      
+    # Subtract current stock  
+    ml_needed["red"] -= total_red
+    ml_needed["green"] -= total_green
+    ml_needed["blue"] -= total_blue
+    ml_needed["dark"] -= total_dark
         
     priority = dict(sorted(ml_needed.items(), key=lambda x:x[1], reverse=True))
     print(f"Sorted ml required based on need: {priority}")
