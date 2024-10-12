@@ -1,3 +1,4 @@
+import math
 import sqlalchemy
 from src import database as db
 from fastapi import APIRouter, Depends
@@ -122,17 +123,25 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         
     priority = dict(sorted(ml_needed.items(), key=lambda x:x[1], reverse=True))
     print(f"Sorted ml required based on need: {priority}")
+    
+    def budget_calculations(gold: int) -> int:
+        if gold <= 200:
+            return gold
+        
+        gold_adjusted = gold / 100
+        budget = (100*math.log(gold_adjusted, 2)) + 100
+        return budget
              
     # Develop the plan
     plan = []
-    budget = gold
+    budget = budget_calculations(gold)
+    print(f"gold: {gold}, budget: {budget}")
     
     for type, ml_need in priority.items():
         if ml_need <= 0:
             continue
           
         for barrel in sorted_catalog[type]:
-            print(f"barrel: {barrel}")
             if barrel.quantity <= 0:
                 continue
             
