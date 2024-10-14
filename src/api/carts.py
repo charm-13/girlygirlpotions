@@ -101,8 +101,8 @@ def create_cart(new_cart: Customer):
             {"name": new_cart.customer_name}
         ).mappings().fetchone()
         
-    print(f"cart id: {id}, new cart for: {new_cart}")
-    return { "cart_id": id }
+    print(f"cart id: {id["id"]}, new cart for: {new_cart}")
+    return { "cart_id": id["id"] }
 
 
 class CartItem(BaseModel):
