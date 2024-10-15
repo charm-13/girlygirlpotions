@@ -90,8 +90,10 @@ def create_cart(new_cart: Customer):
     """ """
     with db.engine.begin() as connection:
         connection.execute(
-            sqlalchemy.text("INSERT INTO carts (customer_name, character_class, level) \
-                            VALUES (:name, :class, :level)"),
+            sqlalchemy.text("INSERT INTO carts (customer_name, character_class, level, time_created) \
+                            SELECT :name, :class, :level, CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles' \
+                            WHERE NOT EXISTS \
+                                (SELECT customer_name FROM carts WHERE customer_name = :name)"),
             {"name": new_cart.customer_name, "class": new_cart.character_class, "level": new_cart.level}
         )
         id = connection.execute(
