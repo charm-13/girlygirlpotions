@@ -1,3 +1,4 @@
+import math
 import sqlalchemy
 from src import database as db
 from fastapi import APIRouter, Depends
@@ -95,7 +96,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                             JOIN potion_mixes ON potion_inventory.sku = potion_mixes.sku")
         ).mappings()
         inventory = result.fetchone()
-        print(potion_result)
         gold = inventory["gold"]
         
         total_red = inventory["num_red_ml"]
@@ -114,7 +114,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         ml_needed["blue"] += potion["blue_amt"]*num_potions_needed
         ml_needed["dark"] += potion["dark_amt"]*num_potions_needed
       
-    # Subtract current stock  
+    # Subtract current ml stock  
     ml_needed["red"] -= total_red
     ml_needed["green"] -= total_green
     ml_needed["blue"] -= total_blue
@@ -122,18 +122,34 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         
     priority = dict(sorted(ml_needed.items(), key=lambda x:x[1], reverse=True))
     print(f"Sorted ml required based on need: {priority}")
+    
+    def budget_calculations(gold: int) -> int:
+        if gold <= 200:
+            return gold
+        
+        gold_adjusted = gold / 100
+        budget = (100*math.log(gold_adjusted, 2)) + 100
+        return budget
              
     # Develop the plan
     plan = []
-    budget = gold
+    budget = round(budget_calculations(gold))
+    #TODO: don't hardcode capacity
+    total_ml_capacity = 10000
+    total_current_ml = total_red + total_green + total_blue + total_dark
+    max_ml_to_buy = total_ml_capacity - total_current_ml
+    print(f"gold: {gold}, budget: {budget}, current ml in inventory: {total_current_ml}, max ml to buy: {max_ml_to_buy}")
     
     for type, ml_need in priority.items():
+        if max_ml_to_buy <= 0:
+            break   # if max ml capacity is reached, cannot buy anymore ml
+        
         if ml_need <= 0:
-            continue
+            continue # shouldn't buy this specific potion if there's no need
           
         for barrel in sorted_catalog[type]:
             print(f"barrel: {barrel}")
-            if barrel.quantity <= 0:
+            if barrel.quantity <= 0 or barrel.ml_per_barrel > max_ml_to_buy:
                 continue
             
             if gold < 500 and barrel.price > 150:
