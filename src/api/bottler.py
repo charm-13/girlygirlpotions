@@ -18,7 +18,7 @@ class PotionInventory(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     """ """
-    total_potions = 0
+    
     red_potions = 0
     green_potions = 0
     blue_potions = 0
@@ -31,8 +31,6 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     ml_per_potion = 100
     
     for potion in potions_delivered:
-        total_potions += potion.quantity
-        
         if potion.potion_type == [100, 0, 0, 0]: # red potion
             red_potions += potion.quantity
             red_ml_used += ml_per_potion*potion.quantity
@@ -67,13 +65,11 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                             "dark_potions": dark_potions})
         connection.execute(
             sqlalchemy.text("UPDATE global_inventory \
-                            SET num_potions = num_potions + :total_potions, \
-                                num_red_ml = num_red_ml - :red_ml_used, \
+                            SET num_red_ml = num_red_ml - :red_ml_used, \
                                 num_green_ml = num_green_ml - :green_ml_used, \
                                 num_blue_ml = num_blue_ml - :blue_ml_used, \
                                 num_dark_ml = num_dark_ml - :dark_ml_used"),
-                           {"total_potions": total_potions, 
-                            "red_ml_used": red_ml_used, 
+                           {"red_ml_used": red_ml_used, 
                             "green_ml_used": green_ml_used, 
                             "blue_ml_used": blue_ml_used, 
                             "dark_ml_used": dark_ml_used})
@@ -86,20 +82,26 @@ def get_bottle_plan():
     """
     Go from barrel to bottle.
     """
+    plan = []
+    ml_per_potion = 100
+    max_potions = 50
+    
     with db.engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT num_potions, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory")
+            sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory")
             ).mappings()
+        pot_res = connection.execute(
+            sqlalchemy.text("SELECT SUM(quantity) as num_potions \
+                            FROM potion_inventory")
+        ).mappings()
         inventory = result.fetchone()
-        num_potions = inventory["num_potions"]
+        pot_inv = pot_res.fetchone()
         num_red_ml = inventory["num_red_ml"]
         num_green_ml = inventory["num_green_ml"]
         num_blue_ml = inventory["num_blue_ml"]
         num_dark_ml = inventory["num_dark_ml"]
+        num_potions = pot_inv["num_potions"]
         
-    plan = []
-    ml_per_potion = 100
-    max_potions = 50
     max_potions_to_bottle = max_potions - num_potions
     print(f"max potions to bottle: {max_potions_to_bottle}")
     

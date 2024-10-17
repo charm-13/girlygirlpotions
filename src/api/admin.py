@@ -19,18 +19,21 @@ def reset():
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text("UPDATE global_inventory \
-                            SET num_potions = 0, \
-                                num_red_ml = 0, \
+                            SET num_red_ml = 0, \
                                 num_green_ml = 0, \
                                 num_blue_ml = 0, \
                                 num_dark_ml = 0, \
-                                gold = 100"))
+                                gold = 100, \
+                                potion_capacity = 50, \
+                                ml_capacity = 10000"))
         # v3 TODO: delete all rows in potion_inventory and potion_mixes
         connection.execute(
             sqlalchemy.text("UPDATE potion_inventory "
                             "SET quantity = 0"))
-        
-        # TODO: update carts 
+        connection.execute(
+            sqlalchemy.text("DELETE FROM carts"))
+        connection.execute(
+            sqlalchemy.text("DELETE FROM carts_items"))
         
     return "OK"
 

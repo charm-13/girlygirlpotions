@@ -191,9 +191,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             
         with db.engine.begin() as connection:
             connection.execute(sqlalchemy.text("UPDATE global_inventory \
-                                                SET num_potions = num_potions - :total_potions_bought, \
-                                                    gold = gold + :total_gold_paid"),
-                            {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid})
+                                                SET gold = gold + :total_gold_paid"),
+                            {"total_gold_paid": total_gold_paid})
             connection.execute(sqlalchemy.text("DELETE FROM carts_items \
                                                 WHERE cart_id = :cart_id"), 
                             {"cart_id": cart_id})

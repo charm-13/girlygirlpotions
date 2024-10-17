@@ -16,11 +16,16 @@ def get_inventory():
     """ """
     with db.engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT num_potions, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold \
+            sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold \
                             FROM global_inventory")
         ).mappings()
+        pot_res = connection.execute(
+            sqlalchemy.text("SELECT SUM(quantity) as num_potions \
+                            FROM potion_inventory")
+        ).mappings()
         inv = result.fetchone()
-        num_potions = inv["num_potions"]
+        pot_inv = pot_res.fetchone()
+        num_potions = pot_inv["num_potions"]
         total_ml = inv["num_red_ml"]+inv["num_green_ml"]+inv["num_blue_ml"]+inv["num_dark_ml"]
         gold = inv["gold"]
         
@@ -36,8 +41,8 @@ def get_capacity_plan():
     """
 
     return {
-        "potion_capacity": 50,
-        "ml_capacity": 10000
+        "potion_capacity": 0,
+        "ml_capacity": 0
         }
 
 class CapacityPurchase(BaseModel):
