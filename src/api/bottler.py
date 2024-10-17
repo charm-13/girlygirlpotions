@@ -101,11 +101,12 @@ def get_bottle_plan():
     ml_per_potion = 100
     max_potions = 50
     max_potions_to_bottle = max_potions - num_potions
+    print(f"max potions to bottle: {max_potions_to_bottle}")
     
     red_potions_to_bottle = num_red_ml // ml_per_potion
     if red_potions_to_bottle > max_potions_to_bottle:
         red_potions_to_bottle = max_potions_to_bottle
-        max_potions_to_bottle = 0
+        
     if red_potions_to_bottle > 0:
         plan.append(
             {
@@ -113,11 +114,12 @@ def get_bottle_plan():
                 "quantity": red_potions_to_bottle,
             }
         )
+    max_potions_to_bottle -= red_potions_to_bottle
         
     green_potions_to_bottle = num_green_ml // ml_per_potion
     if green_potions_to_bottle > max_potions_to_bottle:
         green_potions_to_bottle = max_potions_to_bottle
-        max_potions_to_bottle = 0
+        
     if green_potions_to_bottle > 0:
         plan.append(
             {
@@ -125,11 +127,12 @@ def get_bottle_plan():
                 "quantity": green_potions_to_bottle,
             }
         )
+    max_potions_to_bottle -= green_potions_to_bottle
     
     blue_potions_to_bottle = num_blue_ml // ml_per_potion
     if blue_potions_to_bottle > max_potions_to_bottle:
         blue_potions_to_bottle = max_potions_to_bottle
-        max_potions_to_bottle = 0
+        
     if blue_potions_to_bottle > 0:
         plan.append(
             {
@@ -137,11 +140,12 @@ def get_bottle_plan():
                 "quantity": blue_potions_to_bottle,
             }
         )
+    max_potions_to_bottle -= blue_potions_to_bottle
     
     dark_potions_to_bottle = num_dark_ml // ml_per_potion
     if dark_potions_to_bottle > max_potions_to_bottle:
         dark_potions_to_bottle = max_potions_to_bottle
-        max_potions_to_bottle = 0
+        
     if dark_potions_to_bottle > 0:
         plan.append(
             {
@@ -149,6 +153,7 @@ def get_bottle_plan():
                 "quantity": dark_potions_to_bottle,
             }
         )
+    max_potions_to_bottle -= dark_potions_to_bottle
         
     print(f"Potions to bottle -- red: {red_potions_to_bottle}, green: {green_potions_to_bottle}, blue: {blue_potions_to_bottle}, dark: {dark_potions_to_bottle}")
     print(f"Bottle plan: {plan}")
