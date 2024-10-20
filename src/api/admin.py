@@ -26,7 +26,6 @@ def reset():
                                 gold = 100, \
                                 potion_capacity = 50, \
                                 ml_capacity = 10000"))
-        # v3 TODO: delete all rows in potion_inventory and potion_mixes
         connection.execute(
             sqlalchemy.text("UPDATE potion_inventory "
                             "SET quantity = 0"))

@@ -12,11 +12,10 @@ def get_catalog():
     """
     with db.engine.begin() as connection:
         inv_result = connection.execute(
-            sqlalchemy.text("SELECT potion_inventory.sku, name, quantity, price, potion_mixes.red_amt, \
-                                    potion_mixes.green_amt, potion_mixes.blue_amt, potion_mixes.dark_amt \
-                            FROM potion_inventory \
-                            JOIN potion_mixes ON potion_inventory.sku = potion_mixes.sku \
-                            LIMIT 6")
+            sqlalchemy.text("""SELECT potion_inventory.sku, name, quantity, price, red_amt, 
+                                    green_amt, blue_amt, dark_amt 
+                            FROM potion_inventory
+                            LIMIT 6""")
         ).mappings()
         
     catalog = []

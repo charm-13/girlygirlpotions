@@ -23,63 +23,32 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     blue_ml_used = 0
     dark_ml_used = 0
     
-    red_cost_per_ml = 0.5
-    green_cost_per_ml = 0.5
-    blue_cost_per_ml = 0.5
-    dark_cost_per_ml = 0.6
-    
+    quantities = []
+
+    for potion in potions_delivered:
+        red_ml = potion.potion_type[0]
+        green_ml = potion.potion_type[1]
+        blue_ml = potion.potion_type[2]
+        dark_ml = potion.potion_type[3]
+        
+        quantity = potion.quantity
+        
+        red_ml_used += red_ml*quantity
+        green_ml_used += green_ml*quantity
+        blue_ml_used += blue_ml*quantity
+        dark_ml_used += dark_ml*quantity
+        
+        quantities.append({"quantity": quantity, "red_amt": red_ml, "green_amt": green_ml, "blue_amt": blue_ml, "dark_amt": dark_ml})
+        
     with db.engine.begin() as connection:
-        inventory_potions = connection.execute(
-            sqlalchemy.text("SELECT sku, red_amt, green_amt, blue_amt, dark_amt \
-                            FROM potion_mixes")
-        ).mappings()
-    
-        for potion in potions_delivered:
-            red_ml = potion.potion_type[0]
-            green_ml = potion.potion_type[1]
-            blue_ml = potion.potion_type[2]
-            dark_ml = potion.potion_type[3]
-            
-            red_ml_used += red_ml
-            green_ml_used += green_ml
-            blue_ml_used += blue_ml
-            dark_ml_used += dark_ml
-            
-            sku = "NONE"
-            name = "None" 
-            
-            price = red_cost_per_ml*red_ml + green_cost_per_ml*green_ml + \
-                    blue_cost_per_ml*blue_ml + dark_cost_per_ml*dark_ml
-            
-            for pot in inventory_potions:
-                pot_mix = [pot["red_amt"], pot["green_amt"], pot["blue_amt"], pot["dark_amt"]]
-                if pot_mix == potion.potion_type:
-                    sku = pot["sku"]
-                    break
-            
-            if sku == "NONE":
-                print(f"{potion} doesn't exist :|")
-                
-            # connection.execute(
-            # sqlalchemy.text("INSERT INTO potion_inventory (sku, name, quantity, price) \
-            #                 SELECT :sku, :name, :quantity, :price \
-            #                 WHERE NOT EXISTS \
-            #                     (UPDATE potion_inventory SET quantity = quantity + :quantity WHERE sku = :sku)"),
-            # {"sku": sku, "name": name, "quantity": potion.quantity, "price": price})  
-            connection.execute(
-            sqlalchemy.text("UPDATE potion_inventory SET quantity = quantity + :quantity WHERE sku = :sku"),
-            {"sku": sku, "quantity": potion.quantity})  
-            # connection.execute(
-            # sqlalchemy.text("INSERT INTO potion_mixes (sku, red_amt, green_amt, blue_amt, dark_amt) \
-            #                 SELECT :sku, :name, :quantity, :price \
-            #                 WHERE NOT EXISTS \
-            #                     (UPDATE potion_mixes \
-            #                     SET red_amt = red_amt + :red_amt, \
-            #                     green_amt = green_amt + :green_amt, \
-            #                     blue_amt = blue_amt + :blue_amt, \
-            #                     dark_amt = dark_amt + :dark_amt, \
-            #                     WHERE sku = :sku)"),
-            # {"sku": sku, "name": name, "red_amt": red_ml_used, "green_amt": green_ml_used, "blue_amt": blue_ml_used, "dark_amt": dark_ml_used})   
+        connection.execute(
+            sqlalchemy.text("""UPDATE potion_inventory
+                            SET quantity = quantity + :quantity
+                            WHERE red_amt = :red_amt
+                                AND green_amt = :green_amt
+                                AND blue_amt = :blue_amt
+                                AND dark_amt = :dark_amt"""),
+                            quantities)  
         connection.execute(
             sqlalchemy.text("UPDATE global_inventory \
                             SET num_red_ml = num_red_ml - :red_ml_used, \
@@ -107,10 +76,9 @@ def get_bottle_plan():
             sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")
             ).mappings()
         pot_result = connection.execute(
-            sqlalchemy.text("SELECT potion_inventory.sku, red_amt, green_amt, blue_amt, dark_amt, potion_inventory.quantity \
-                            FROM potion_mixes \
-                            JOIN potion_inventory ON potion_inventory.sku = potion_mixes.sku \
-                            ORDER BY potion_inventory.quantity")
+            sqlalchemy.text("""SELECT sku, red_amt, green_amt, blue_amt, dark_amt
+                            FROM potion_inventory
+                            ORDER BY quantity""")
         ).mappings()
         num_potions_result = connection.execute(
             sqlalchemy.text("SELECT SUM(quantity) as num_potions \
