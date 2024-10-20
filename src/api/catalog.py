@@ -15,7 +15,8 @@ def get_catalog():
             sqlalchemy.text("SELECT potion_inventory.sku, name, quantity, price, potion_mixes.red_amt, \
                                     potion_mixes.green_amt, potion_mixes.blue_amt, potion_mixes.dark_amt \
                             FROM potion_inventory \
-                            JOIN potion_mixes ON potion_inventory.sku = potion_mixes.sku")
+                            JOIN potion_mixes ON potion_inventory.sku = potion_mixes.sku \
+                            LIMIT 6")
         ).mappings()
         
     catalog = []

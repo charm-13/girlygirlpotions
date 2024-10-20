@@ -85,44 +85,32 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     print(f"Sorted catalog based on cost-effectiveness: {sorted_catalog}")
         
-    # Logic: Buy a barrel for each type that has less than 10 potions
-    # Give priority to the type with the most need
+    # Logic: Buy a barrel for each type that has less than 1/4 of the ml capcity
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml \
+        result = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity \
                                                         FROM global_inventory")).mappings()
-        potion_result = connection.execute(
-            sqlalchemy.text("SELECT quantity, potion_mixes.red_amt, potion_mixes.green_amt, potion_mixes.blue_amt, potion_mixes.dark_amt \
-                            FROM potion_inventory \
-                            JOIN potion_mixes ON potion_inventory.sku = potion_mixes.sku")
-        ).mappings()
         inventory = result.fetchone()
-        gold = inventory["gold"]
         
+        gold = inventory["gold"]
         total_red = inventory["num_red_ml"]
         total_green = inventory["num_green_ml"]
         total_blue = inventory["num_blue_ml"]
         total_dark = inventory["num_dark_ml"]
+        total_ml_capacity = inventory["ml_capacity"]
     
     # Determine need
+    max_ml_per_type = total_ml_capacity / 4
     ml_needed = {"red": 0, "green": 0, "blue": 0, "dark": 0}  # red, green, blue, dark
-        
-    for potion in potion_result:
-        num_potions_needed = max(10 - potion["quantity"], 0)
-        
-        ml_needed["red"] += potion["red_amt"]*num_potions_needed
-        ml_needed["green"] += potion["green_amt"]*num_potions_needed
-        ml_needed["blue"] += potion["blue_amt"]*num_potions_needed
-        ml_needed["dark"] += potion["dark_amt"]*num_potions_needed
-      
-    # Subtract current ml stock  
-    ml_needed["red"] -= total_red
-    ml_needed["green"] -= total_green
-    ml_needed["blue"] -= total_blue
-    ml_needed["dark"] -= total_dark
+    
+    ml_needed["red"] = max_ml_per_type - total_red
+    ml_needed["green"] = max_ml_per_type - total_green
+    ml_needed["blue"] = max_ml_per_type - total_blue
+    ml_needed["dark"] = max_ml_per_type - total_dark
         
     priority = dict(sorted(ml_needed.items(), key=lambda x:x[1], reverse=True))
     print(f"Sorted ml required based on need: {priority}")
     
+    # Calculate budget
     def budget_calculations(gold: int) -> int:
         if gold <= 200:
             return gold
@@ -131,11 +119,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         budget = (100*math.log(gold_adjusted, 2)) + 100
         return budget
              
+    budget = round(budget_calculations(gold))
+    
     # Develop the plan
     plan = []
-    budget = round(budget_calculations(gold))
-    #TODO: don't hardcode capacity
-    total_ml_capacity = 10000
     total_current_ml = total_red + total_green + total_blue + total_dark
     max_ml_to_buy = total_ml_capacity - total_current_ml
     print(f"gold: {gold}, budget: {budget}, current ml in inventory: {total_current_ml}, max ml to buy: {max_ml_to_buy}")
@@ -148,7 +135,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             continue # shouldn't buy this specific potion if there's no need
           
         for barrel in sorted_catalog[type]:
-            print(f"barrel: {barrel}")
             if barrel.quantity <= 0 or barrel.ml_per_barrel > max_ml_to_buy:
                 continue
             
