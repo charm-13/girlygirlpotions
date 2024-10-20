@@ -137,13 +137,14 @@ def get_bottle_plan():
         if num_red_ml+num_green_ml+num_blue_ml+num_dark_ml < 100:
             break   # not enough ml for 1 potion
         
+        sku = potion["sku"]
         red_used = potion["red_amt"]
         green_used = potion["green_amt"]
         blue_used = potion["blue_amt"]
         dark_used = potion["dark_amt"]
         
         if red_used+green_used+blue_used+dark_used < ml_per_potion:
-            print(f"why tf does ml used for {potion["sku"]} not add up to {ml_per_potion} >:|")
+            print(f"why tf does ml used for {sku} not add up to {ml_per_potion} >:|")
             break
         
         # check if there's enough ml for the potion
@@ -175,7 +176,7 @@ def get_bottle_plan():
         num_blue_ml -= blue_used*num_to_bottle
         num_dark_ml -= dark_used*num_to_bottle
         
-        print(f"Bottling {num_to_bottle} {potion["sku"]}!")
+        print(f"Bottling {num_to_bottle} {sku}!")
         
         plan.append({
             "potion_type": [red_used, green_used, blue_used, dark_used],
