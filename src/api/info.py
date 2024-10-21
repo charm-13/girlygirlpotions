@@ -17,5 +17,15 @@ def post_time(timestamp: Timestamp):
     """
     Share current time.
     """
+    day = timestamp.day
+    hour = timestamp.hour
+    print(f"it's currently {hour} o'clock on {day}")
     return "OK"
+
+@router.get("/current_time")
+def get_current_time():
+    """
+    Get the current time.
+    """
+    return {"day": "Edgeday", "hour": 0}
 
