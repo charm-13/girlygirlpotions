@@ -88,7 +88,6 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    #TODO: account for same person returning lol
     with db.engine.begin() as connection:
         id = connection.execute(
             sqlalchemy.text("""INSERT INTO carts (customer_name, character_class, level, time_created)
@@ -112,32 +111,37 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
     print(f"Finding cart {cart_id}...")
     
-    with db.engine.begin() as connection:
-        ids = connection.execute(
-            sqlalchemy.text("""SELECT id 
-                            FROM carts 
-                            WHERE id = :cart_id"""), 
-            {"cart_id": cart_id}
-        ).mappings().fetchone()
+    try:
+        with db.engine.begin() as connection:
+            ids = connection.execute(
+                sqlalchemy.text("""SELECT id 
+                                FROM carts 
+                                WHERE id = :cart_id"""), 
+                {"cart_id": cart_id}
+            ).fetchone()
+            
+        if ids is None:
+            print(f"cart {cart_id} doesn't exist")
+            return {"success": False} 
         
-    if ids == None:
-        print(f"cart {cart_id} doesn't exist")
-        return {"success": False} 
-    
-    with db.engine.begin() as connection:
-        connection.execute(
-            sqlalchemy.text("""INSERT INTO carts_items (cart_id, item_sku, quantity) 
-                            VALUES (:id, :sku, :amt)"""), 
-            {"id": cart_id, "sku": item_sku, "amt": cart_item.quantity}
-        )
-        connection.execute(
-            sqlalchemy.text("""UPDATE potion_inventory 
-                            SET quantity = quantity - :cart_quantity 
-                            WHERE sku = :item_sku"""),
-                            {"cart_quantity": cart_item.quantity, "item_sku": item_sku})
+        with db.engine.begin() as connection:
+            connection.execute(
+                sqlalchemy.text("""INSERT INTO carts_items (cart_id, item_sku, quantity) 
+                                VALUES (:id, :sku, :amt)"""), 
+                {"id": cart_id, "sku": item_sku, "amt": cart_item.quantity}
+            )
+            connection.execute(
+                sqlalchemy.text("""UPDATE potion_inventory 
+                                SET quantity = quantity - :cart_quantity 
+                                WHERE sku = :item_sku"""),
+                                {"cart_quantity": cart_item.quantity, "item_sku": item_sku})
 
-    print(f"Added {cart_item.quantity} {item_sku} to cart {cart_id}")
-    return {"success": True}
+        print(f"Added {cart_item.quantity} {item_sku} to cart {cart_id}")
+        return {"success": True}
+    
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return {"success": False, "error": str(e)}
 
 
 class CartCheckout(BaseModel):
@@ -154,41 +158,47 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     dark_potions_bought = 0
     total_gold_paid = 0
     
-    with db.engine.begin() as connection:
-        items = connection.execute(
-            sqlalchemy.text("""SELECT cart_id, item_sku, quantity 
-                            FROM carts_items 
-                            WHERE cart_id = :cart_id"""), 
-            {"cart_id": cart_id}
-        ).mappings()
-        
-    if not items:
-        print(f"cart {cart_id} is empty or doesn't exist")
-    else:
-        for item in items:
-            total_potions_bought += item["quantity"]
-            if item["item_sku"] == "RED_POTION":
-                total_gold_paid += item["quantity"]*50
-                red_potions_bought += item["quantity"]
-                
-            if item["item_sku"] == "GREEN_POTION":
-                total_gold_paid += item["quantity"]*50
-                green_potions_bought += item["quantity"]
-                
-            if item["item_sku"] == "BLUE_POTION":
-                total_gold_paid += item["quantity"]*60
-                blue_potions_bought += item["quantity"]
-                
-            if item["item_sku"] == "DARK_POTION":
-                total_gold_paid += item["quantity"]*70
-                dark_potions_bought += item["quantity"]     
-            
+    try:
         with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text("""UPDATE global_inventory 
-                                                SET gold = gold + :total_gold_paid"""),
-                            {"total_gold_paid": total_gold_paid})
-        
-        print(f"cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment") 
-          
-    return {"total_potions_bought": total_potions_bought,
-            "total_gold_paid": total_gold_paid}
+            items = connection.execute(
+                sqlalchemy.text("""SELECT cart_id, item_sku, quantity 
+                                FROM carts_items 
+                                WHERE cart_id = :cart_id"""), 
+                {"cart_id": cart_id}
+            ).mappings()
+            
+        if not items:
+            print(f"cart {cart_id} is empty or doesn't exist")
+            return {"error": "Cart is empty or doesn't exist"}
+        else:
+            for item in items:
+                total_potions_bought += item["quantity"]
+                if item["item_sku"] == "RED_POTION":
+                    total_gold_paid += item["quantity"]*50
+                    red_potions_bought += item["quantity"]
+                    
+                if item["item_sku"] == "GREEN_POTION":
+                    total_gold_paid += item["quantity"]*50
+                    green_potions_bought += item["quantity"]
+                    
+                if item["item_sku"] == "BLUE_POTION":
+                    total_gold_paid += item["quantity"]*60
+                    blue_potions_bought += item["quantity"]
+                    
+                if item["item_sku"] == "DARK_POTION":
+                    total_gold_paid += item["quantity"]*70
+                    dark_potions_bought += item["quantity"]     
+                
+            with db.engine.begin() as connection:
+                connection.execute(sqlalchemy.text("""UPDATE global_inventory 
+                                                    SET gold = gold + :total_gold_paid"""),
+                                {"total_gold_paid": total_gold_paid})
+            
+            print(f"cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment") 
+            
+        return {"total_potions_bought": total_potions_bought,
+                "total_gold_paid": total_gold_paid}
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {"error": str(e)}
