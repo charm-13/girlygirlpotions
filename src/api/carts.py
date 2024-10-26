@@ -152,49 +152,38 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"Starting checkout for cart {cart_id}...")
     total_potions_bought = 0
-    red_potions_bought = 0
-    green_potions_bought = 0
-    blue_potions_bought = 0
-    dark_potions_bought = 0
     total_gold_paid = 0
     
     try:
         with db.engine.begin() as connection:
             items = connection.execute(
-                sqlalchemy.text("""SELECT cart_id, item_sku, quantity 
+                sqlalchemy.text("""SELECT carts_items.cart_id, carts_items.item_sku, carts_items.quantity, potion_inventory.price
                                 FROM carts_items 
+                                JOIN potion_inventory ON potion_inventory.sku = carts_items.item_sku
                                 WHERE cart_id = :cart_id"""), 
                 {"cart_id": cart_id}
             ).mappings()
             
-        if not items:
-            print(f"cart {cart_id} is empty or doesn't exist")
-            return {"error": "Cart is empty or doesn't exist"}
-        else:
-            for item in items:
-                total_potions_bought += item["quantity"]
-                if item["item_sku"] == "RED_POTION":
-                    total_gold_paid += item["quantity"]*50
-                    red_potions_bought += item["quantity"]
+            if not items:
+                print(f"cart {cart_id} is empty or doesn't exist")
+                return {"error": "Cart is empty or doesn't exist"}
+            else:
+                purchases = []
+                for item in items:
+                    sku = item["item_sku"]
+                    quantity = item["quantity"]
+                    price = item["price"]
+                    total_potions_bought += quantity
+                    total_gold_paid += quantity*price
                     
-                if item["item_sku"] == "GREEN_POTION":
-                    total_gold_paid += item["quantity"]*50
-                    green_potions_bought += item["quantity"]
-                    
-                if item["item_sku"] == "BLUE_POTION":
-                    total_gold_paid += item["quantity"]*60
-                    blue_potions_bought += item["quantity"]
-                    
-                if item["item_sku"] == "DARK_POTION":
-                    total_gold_paid += item["quantity"]*70
-                    dark_potions_bought += item["quantity"]     
+                    purchases.append({"sku": sku, "quantity": quantity, "price per item": price})          
                 
-            with db.engine.begin() as connection:
                 connection.execute(sqlalchemy.text("""UPDATE global_inventory 
                                                     SET gold = gold + :total_gold_paid"""),
                                 {"total_gold_paid": total_gold_paid})
-            
-            print(f"cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment") 
+                
+            print(f"""cart {cart_id} bought {purchases} \n 
+                  cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment""") 
             
         return {"total_potions_bought": total_potions_bought,
                 "total_gold_paid": total_gold_paid}
