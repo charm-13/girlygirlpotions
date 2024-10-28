@@ -1,3 +1,5 @@
+import sqlalchemy
+from src import database as db
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from src.api import auth
@@ -19,6 +21,14 @@ def post_time(timestamp: Timestamp):
     """
     day = timestamp.day
     hour = timestamp.hour
+    
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text("""INSERT INTO time (day, hour)
+                                SELECT :day, :hour"""),
+            {"day": day, "hour": hour}
+        )
+        
     print(f"it's currently {hour} o'clock on {day}")
     return "OK"
 
@@ -27,5 +37,15 @@ def get_current_time():
     """
     Get the current time.
     """
-    return {"day": "Edgeday", "hour": 0}
+    with db.engine.begin() as connection:
+        time = connection.execute(
+            sqlalchemy.text("""SELECT day, hour
+                                FROM time
+                                WHERE id = (SELECT MAX(id) FROM time)""")
+        ).mappings()
+        
+        day = time["day"]
+        hour = time["hour"]
+        
+    return {"day": day, "hour": hour}
 
