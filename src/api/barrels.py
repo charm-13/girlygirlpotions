@@ -151,6 +151,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if purchase_amt > 0:
                 plan.append({"sku": barrel.sku, "quantity": purchase_amt})
                 budget -= barrel.price*purchase_amt
+                max_ml_to_buy -= barrel.ml_per_barrel
                 break
         
     print(f"Wholesale purchase plan: {plan}")
