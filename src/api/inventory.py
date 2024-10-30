@@ -36,10 +36,11 @@ def get_inventory():
 @router.post("/plan")
 def get_capacity_plan():
     """ 
+    Develops a capacity purchase plan.
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
     capacity unit costs 1000 gold.
     """
-
+    
     return {
         "potion_capacity": 0,
         "ml_capacity": 0
@@ -52,9 +53,6 @@ class CapacityPurchase(BaseModel):
 # Gets called once a day
 @router.post("/deliver/{order_id}")
 def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
-    """ 
-    Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
-    capacity unit costs 1000 gold.
-    """
+    """ """
 
     return "OK"

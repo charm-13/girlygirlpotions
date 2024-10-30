@@ -23,6 +23,8 @@ class Barrel(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
+    print(f"attempting to deliver: {barrels_delivered} \n with order_id: {order_id}")
+    
     red_ml = 0
     green_ml = 0
     blue_ml = 0
@@ -55,7 +57,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                                                 gold = gold - :gold_paid"),
                             {"red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml, "gold_paid": gold_paid})
 
-    print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
+    print(f"order {order_id} successful! \n delievered: {barrels_delivered}")
     return "OK"
 
 # Gets called once a day
@@ -87,8 +89,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         
     # Logic: Buy a barrel for each type that has less than 1/4 of the ml capcity
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity \
-                                                        FROM global_inventory")).mappings()
+        result = connection.execute(sqlalchemy.text("""SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity, 
+                                                                SUM(num_red_ml+num_green_ml+num_blue_ml+num_dark_ml) AS total_ml
+                                                        FROM global_inventory
+                                                        GROUP BY gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity""")).mappings()
         inventory = result.fetchone()
         
         gold = inventory["gold"]
@@ -97,6 +101,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         total_blue = inventory["num_blue_ml"]
         total_dark = inventory["num_dark_ml"]
         total_ml_capacity = inventory["ml_capacity"]
+        total_current_ml = inventory["total_ml"]
     
     # Determine need
     max_ml_per_type = total_ml_capacity / 4
@@ -123,7 +128,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     
     # Develop the plan
     plan = []
-    total_current_ml = total_red + total_green + total_blue + total_dark
     max_ml_to_buy = total_ml_capacity - total_current_ml
     print(f"gold: {gold}, budget: {budget}, current ml in inventory: {total_current_ml}, max ml to buy: {max_ml_to_buy}")
     

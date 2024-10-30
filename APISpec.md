@@ -246,7 +246,7 @@ shop should take this as an opportunity to remove all of their inventory and set
 
 ### 5. Info Functions
 
-### .1. Current time - `/info/current_time` (POST)
+### 5.1. Current time - `/info/current_time` (POST)
 
 Shares what the latest time (in game time) is. 
 
@@ -256,7 +256,22 @@ Shares what the latest time (in game time) is.
 [
   {
     "day": "string",
-    "hour": "number"
+    "hour": "integer"
+  }
+]
+```
+
+### 5.2. Current time - `/info/current_time` (GET)
+
+Gets what the latest time (in game time) is. 
+
+**Response**:
+
+```json
+[
+  {
+    "day": "string",
+    "hour": "integer"
   }
 ]
 ```
@@ -273,7 +288,7 @@ Return a summary of your current number of potions, ml, and gold.
   "number_of_potions": "number",
   "ml_in_barrels": "number",
   "gold": "number"
-)
+}
 ```  
 
 ### 6.2 Get capacity purchase plan - `/inventory/plan` (POST)
