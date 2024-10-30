@@ -60,6 +60,17 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     print(f"order {order_id} successful! \n delievered: {barrels_delivered}")
     return "OK"
 
+def serious_budget_calculations(gold: int) -> int:
+    """
+    Calculate barrel budget based on current gold.
+    """
+    if gold <= 200:
+        return gold
+    
+    gold_adjusted = gold / 100
+    budget = (100*math.log(gold_adjusted, 2)) + 100
+    return budget
+
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
@@ -116,15 +127,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(f"Sorted ml required based on need: {priority}")
     
     # Calculate budget
-    def budget_calculations(gold: int) -> int:
-        if gold <= 200:
-            return gold
-        
-        gold_adjusted = gold / 100
-        budget = (100*math.log(gold_adjusted, 2)) + 100
-        return budget
-             
-    budget = round(budget_calculations(gold))
+    budget = round(serious_budget_calculations(gold))
     
     # Develop the plan
     plan = []

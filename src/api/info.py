@@ -32,7 +32,6 @@ def post_time(timestamp: Timestamp):
     print(f"it's currently {hour} o'clock on {day}")
     return "OK"
 
-@router.get("/current_time")
 def get_current_time():
     """
     Get the current time.
