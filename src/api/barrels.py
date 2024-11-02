@@ -64,12 +64,20 @@ def serious_budget_calculations(gold: int) -> int:
     """
     Calculate barrel budget based on current gold.
     """
-    if gold <= 200:
-        return gold
+    budget = gold
     
-    gold_adjusted = gold / 100
-    budget = (100*math.log(gold_adjusted, 2)) + 100
+    if gold > 500:
+        gold_adjusted = (gold - 300) / 100
+        budget = (200*math.log(gold_adjusted, 2)) + 300
+    
     return budget
+
+def potion_value(need):
+    """
+    Assigns weights to each potion type (red, green, blue, dark)
+    based on the day and need.
+    """
+    return need
 
 # Gets called once a day
 @router.post("/plan")
@@ -98,7 +106,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     print(f"Sorted catalog based on cost-effectiveness: {sorted_catalog}")
         
-    # Logic: Buy a barrel for each type that has less than 1/4 of the ml capcity
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text("""SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity, 
                                                                 SUM(num_red_ml+num_green_ml+num_blue_ml+num_dark_ml) AS total_ml
@@ -145,11 +152,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if barrel.quantity <= 0 or barrel.ml_per_barrel > max_ml_to_buy:
                 continue
             
-            if gold < 500 and barrel.price > 150:
+            # useful for when I have little gold, and a lot of need
+            if budget < 500 and barrel.price > 150:
                 continue
             
             max_afford = budget // barrel.price
             if max_afford <= 0:
+                # check for possible loan :)
                 continue
             
             max_purchase = 1

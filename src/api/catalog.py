@@ -13,9 +13,10 @@ def get_catalog():
     #TODO: implement good logic for what to offer when
     with db.engine.begin() as connection:
         inv_result = connection.execute(
-            sqlalchemy.text("""SELECT potion_inventory.sku, name, quantity, price, red_amt, 
-                                    green_amt, blue_amt, dark_amt 
-                            FROM potion_inventory
+            sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.name, potion_inventory.quantity, recipe_book.price, 
+                                recipe_book.red_amt, recipe_book.green_amt, recipe_book.blue_amt, recipe_book.dark_amt 
+                            FROM recipe_book
+                            JOIN potion_inventory ON potion_inventory.sku = recipe_book.sku
                             WHERE quantity > 0
                             ORDER BY quantity desc
                             LIMIT 6""")

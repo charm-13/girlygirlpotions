@@ -24,6 +24,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     dark_ml_used = 0
     
     quantities = []
+    mixes = []
 
     for potion in potions_delivered:
         red_ml = potion.potion_type[0]
@@ -38,17 +39,23 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         blue_ml_used += blue_ml*quantity
         dark_ml_used += dark_ml*quantity
         
-        quantities.append({"quantity": quantity, "red_amt": red_ml, "green_amt": green_ml, "blue_amt": blue_ml, "dark_amt": dark_ml})
+        quantities.append({"quantity": quantity}) 
+        mixes.append({"red_amt": red_ml, "green_amt": green_ml, "blue_amt": blue_ml, "dark_amt": dark_ml})
         
     with db.engine.begin() as connection:
-        connection.execute(
-            sqlalchemy.text("""UPDATE potion_inventory
-                            SET quantity = quantity + :quantity
+        skus = connection.execute(
+            sqlalchemy.text("""SELECT sku
+                            FROM recipe_book
                             WHERE red_amt = :red_amt
                                 AND green_amt = :green_amt
                                 AND blue_amt = :blue_amt
                                 AND dark_amt = :dark_amt"""),
-                            quantities)  
+            mixes).mappings()
+        connection.execute(
+            sqlalchemy.text("""UPDATE potion_inventory
+                            SET quantity = quantity + :quantity
+                            WHERE sku = :sku"""),
+                            skus, quantities)  
         connection.execute(
             sqlalchemy.text("UPDATE global_inventory \
                             SET num_red_ml = num_red_ml - :red_ml_used, \
@@ -76,8 +83,10 @@ def get_bottle_plan():
             sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")
             ).mappings()
         pot_result = connection.execute(
-            sqlalchemy.text("""SELECT sku, red_amt, green_amt, blue_amt, dark_amt
-                            FROM potion_inventory
+            sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.red_amt, 
+                                recipe_book.green_amt, recipe_book.blue_amt, recipe_book.dark_amt
+                            FROM recipe_book
+                            JOIN potion_inventory on potion_inventory.sku = recipe_book.sku
                             ORDER BY quantity""")
         ).mappings()
         num_potions_result = connection.execute(
@@ -95,7 +104,6 @@ def get_bottle_plan():
     max_potions_to_bottle = max_potions - num_potions
     print(f"max potions to bottle: {max_potions_to_bottle}")
     
-    #TODO: change logic when there's more than 6 possible potions
     # Develop plan
     for potion in pot_result:
         print(f"potion: {potion}")

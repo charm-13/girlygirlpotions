@@ -33,6 +33,8 @@ def reset():
             sqlalchemy.text("DELETE FROM carts"))
         connection.execute(
             sqlalchemy.text("DELETE FROM carts_items"))
+        connection.execute(
+            sqlalchemy.text("DELETE FROM time"))
         
     return "OK"
 

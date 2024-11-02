@@ -161,9 +161,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     try:
         with db.engine.begin() as connection:
             items = connection.execute(
-                sqlalchemy.text("""SELECT carts_items.cart_id, carts_items.item_sku, carts_items.quantity, potion_inventory.price
+                sqlalchemy.text("""SELECT carts_items.cart_id, carts_items.item_sku, carts_items.quantity, recipe_book.price
                                 FROM carts_items 
-                                JOIN potion_inventory ON potion_inventory.sku = carts_items.item_sku
+                                JOIN recipe_book ON recipe_book.sku = carts_items.item_sku
                                 WHERE cart_id = :cart_id"""), 
                 {"cart_id": cart_id}
             ).mappings()
@@ -171,20 +171,20 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             if not items:
                 print(f"cart {cart_id} is empty or doesn't exist")
                 return {"error": "Cart is empty or doesn't exist"}
-            else:
-                purchases = []
-                for item in items:
-                    sku = item["item_sku"]
-                    quantity = item["quantity"]
-                    price = item["price"]
-                    total_potions_bought += quantity
-                    total_gold_paid += quantity*price
-                    
-                    purchases.append({"sku": sku, "quantity": quantity, "price per item": price})          
+            
+            purchases = []
+            for item in items:
+                sku = item["item_sku"]
+                quantity = item["quantity"]
+                price = item["price"]
+                total_potions_bought += quantity
+                total_gold_paid += quantity*price
                 
-                connection.execute(sqlalchemy.text("""UPDATE global_inventory 
-                                                    SET gold = gold + :total_gold_paid"""),
-                                {"total_gold_paid": total_gold_paid})
+                purchases.append({"sku": sku, "quantity": quantity, "price per item": price})          
+            
+            connection.execute(sqlalchemy.text("""UPDATE global_inventory 
+                                                SET gold = gold + :total_gold_paid"""),
+                            {"total_gold_paid": total_gold_paid})
                 
             print(f"""cart {cart_id} bought {purchases} \n 
                   cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment""") 
