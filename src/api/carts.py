@@ -88,18 +88,23 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
-    with db.engine.begin() as connection:
-        id = connection.execute(
-            sqlalchemy.text("""INSERT INTO carts (customer_name, character_class, level, time_created)
-                            SELECT :name, :class, :level, CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles' 
-                            RETURNING id"""),
-            {"name": new_cart.customer_name, "class": new_cart.character_class, "level": new_cart.level}
-        ).mappings()
+    try:
+        with db.engine.begin() as connection:
+            id = connection.execute(
+                sqlalchemy.text("""INSERT INTO carts (customer_name, character_class, level, time_created)
+                                SELECT :name, :class, :level, CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles' 
+                                RETURNING id"""),
+                {"name": new_cart.customer_name, "class": new_cart.character_class, "level": new_cart.level}
+            ).mappings()
+            
+            cart_id = id.fetchone()["id"]
+            
+            print(f"cart id: {cart_id}, new cart for: {new_cart}")
+            return { "cart_id": cart_id }
         
-    cart_id = id.fetchone()["id"]
-        
-    print(f"cart id: {cart_id}, new cart for: {new_cart}")
-    return { "cart_id": cart_id }
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return {"success": False, "error": str(e)}
 
 
 class CartItem(BaseModel):
@@ -120,11 +125,10 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
                 {"cart_id": cart_id}
             ).fetchone()
             
-        if ids is None:
-            print(f"cart {cart_id} doesn't exist")
-            return {"success": False} 
+            if ids is None:
+                print(f"cart {cart_id} doesn't exist")
+                return {"success": False} 
         
-        with db.engine.begin() as connection:
             connection.execute(
                 sqlalchemy.text("""INSERT INTO carts_items (cart_id, item_sku, quantity) 
                                 VALUES (:id, :sku, :amt)"""), 
