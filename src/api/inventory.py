@@ -26,10 +26,15 @@ def get_inventory():
         inv = result.fetchone()
         pot_inv = pot_res.fetchone()
         num_potions = pot_inv["num_potions"]
-        total_ml = inv["num_red_ml"]+inv["num_green_ml"]+inv["num_blue_ml"]+inv["num_dark_ml"]
+        red_ml = inv["num_red_ml"]
+        green_ml = inv["num_green_ml"]
+        blue_ml = inv["num_blue_ml"]
+        dark_ml = inv["num_dark_ml"]
+        total_ml = red_ml+green_ml+blue_ml+dark_ml
         gold = inv["gold"]
         
-    print(f"Inventory -- num potions: {num_potions}, ml in barrels: {total_ml}, gold: {gold}")
+    print(f"Inventory -- num potions: {num_potions}, gold: {gold}, 
+          ml in barrels: red = {red_ml}, green = {green_ml}, blue = {blue_ml}, dark = {dark_ml}, total = {total_ml}")
     return {"number_of_potions": num_potions, "ml_in_barrels": total_ml, "gold": gold}
 
 # Gets called once a day
