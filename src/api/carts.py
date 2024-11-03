@@ -135,9 +135,8 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
                 {"id": cart_id, "sku": item_sku, "amt": cart_item.quantity}
             )
             connection.execute(
-                sqlalchemy.text("""UPDATE potion_inventory 
-                                SET quantity = quantity - :cart_quantity 
-                                WHERE sku = :item_sku"""),
+                sqlalchemy.text("""INSERT INTO potion_inventory (sku, quantity)
+                                VALUES (:item_sku, -:cart_quantity)"""),
                                 {"cart_quantity": cart_item.quantity, "item_sku": item_sku})
 
         print(f"Added {cart_item.quantity} {item_sku} to cart {cart_id}")

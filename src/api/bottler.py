@@ -56,10 +56,9 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             mixes.append(mix)
         
         connection.execute(
-            sqlalchemy.text("""UPDATE potion_inventory
-                            SET quantity = quantity + :quantity
-                            WHERE sku = :sku"""),
-                            quantities)  
+            sqlalchemy.text("""INSERT INTO potion_inventory (sku, quantity)
+                            VALUES (:sku, :quantity)"""),
+                            quantities) 
         connection.execute(
             sqlalchemy.text("UPDATE global_inventory \
                             SET num_red_ml = num_red_ml - :red_ml_used, \
@@ -87,11 +86,13 @@ def get_bottle_plan():
             sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")
             ).mappings()
         pot_result = connection.execute(
-            sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.red_amt, 
-                                recipe_book.green_amt, recipe_book.blue_amt, recipe_book.dark_amt
+            sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
+                                recipe_book.blue_amt, recipe_book.dark_amt
                             FROM recipe_book
                             JOIN potion_inventory on potion_inventory.sku = recipe_book.sku
-                            ORDER BY quantity""")
+                            GROUP BY recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
+                                recipe_book.blue_amt, recipe_book.dark_amt
+                            ORDER BY SUM(quantity)""")
         ).mappings()
         num_potions_result = connection.execute(
             sqlalchemy.text("SELECT SUM(quantity) as num_potions \
@@ -110,13 +111,13 @@ def get_bottle_plan():
     
     # Develop plan
     for potion in pot_result:
-        print(f"potion: {potion}")
         if max_potions_to_bottle <= 0:
             break   # not enough capacity for 1 potion
         
         if num_red_ml+num_green_ml+num_blue_ml+num_dark_ml < 100:
             break   # not enough ml for 1 potion
         
+        print(f"potion: {potion}")
         sku = potion["sku"]
         red_used = potion["red_amt"]
         green_used = potion["green_amt"]
