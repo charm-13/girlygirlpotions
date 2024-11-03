@@ -79,8 +79,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
     """
     Which customers visited the shop today?
     """
-    print(f"customers visited: {customers}")
-    print(f"visit_id: {visit_id}")
+    print(f"visit_id: {visit_id}, customers visited: {customers}")
 
     return { "success": True }
 
@@ -185,8 +184,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                                                 SET gold = gold + :total_gold_paid"""),
                             {"total_gold_paid": total_gold_paid})
                 
-            print(f"""cart {cart_id} bought {purchases} \n 
-                  cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment""") 
+            print(f"cart {cart_id} bought {purchases} \n"
+                  "\t cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment") 
             
         return {"total_potions_bought": total_potions_bought,
                 "total_gold_paid": total_gold_paid}

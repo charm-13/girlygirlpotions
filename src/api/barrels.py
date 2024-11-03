@@ -57,7 +57,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                                                 gold = gold - :gold_paid"),
                             {"red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml, "gold_paid": gold_paid})
 
-    print(f"order {order_id} successful! \n delievered: {barrels_delivered}")
+    print(f"order {order_id} successful! \n delivered: {barrels_delivered}")
     return "OK"
 
 def serious_budget_calculations(gold: int) -> int:

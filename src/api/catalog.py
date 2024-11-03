@@ -28,7 +28,6 @@ def get_catalog():
     
     
     for potion in inv_result:
-        print(f"inv: {potion}")
         potion_type = [potion["red_amt"], potion["green_amt"], potion["blue_amt"], potion["dark_amt"]]
     
         catalog.append(
@@ -41,5 +40,5 @@ def get_catalog():
             }
         )
         
-    print(f"Catalog: {catalog}")        
+    print("Catalog: \n" + "\n".join(f"{item}" for item in catalog))        
     return catalog

@@ -70,7 +70,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                             "blue_ml_used": blue_ml_used, 
                             "dark_ml_used": dark_ml_used})
         
-    print(f"potions delievered: {potions_delivered} order_id: {order_id}")
+    print(f"potions delievered: {potions_delivered}, order_id: {order_id}")
     return "OK"
 
 @router.post("/plan")
