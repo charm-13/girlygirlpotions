@@ -25,37 +25,41 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     
     quantities = []
     mixes = []
-
-    for potion in potions_delivered:
-        red_ml = potion.potion_type[0]
-        green_ml = potion.potion_type[1]
-        blue_ml = potion.potion_type[2]
-        dark_ml = potion.potion_type[3]
-        
-        quantity = potion.quantity
-        
-        red_ml_used += red_ml*quantity
-        green_ml_used += green_ml*quantity
-        blue_ml_used += blue_ml*quantity
-        dark_ml_used += dark_ml*quantity
-        
-        quantities.append({"quantity": quantity}) 
-        mixes.append({"red_amt": red_ml, "green_amt": green_ml, "blue_amt": blue_ml, "dark_amt": dark_ml})
-        
+    
     with db.engine.begin() as connection:
-        skus = connection.execute(
-            sqlalchemy.text("""SELECT sku
-                            FROM recipe_book
-                            WHERE red_amt = :red_amt
-                                AND green_amt = :green_amt
-                                AND blue_amt = :blue_amt
-                                AND dark_amt = :dark_amt"""),
-            mixes).mappings()
+
+        for potion in potions_delivered:
+            red_ml = potion.potion_type[0]
+            green_ml = potion.potion_type[1]
+            blue_ml = potion.potion_type[2]
+            dark_ml = potion.potion_type[3]
+            
+            quantity = potion.quantity
+            
+            red_ml_used += red_ml*quantity
+            green_ml_used += green_ml*quantity
+            blue_ml_used += blue_ml*quantity
+            dark_ml_used += dark_ml*quantity
+            
+            mix = {"red_amt": red_ml, "green_amt": green_ml, "blue_amt": blue_ml, "dark_amt": dark_ml}
+            
+            sku = connection.execute(
+                sqlalchemy.text("""SELECT sku
+                                FROM recipe_book
+                                WHERE red_amt = :red_amt
+                                    AND green_amt = :green_amt
+                                    AND blue_amt = :blue_amt
+                                    AND dark_amt = :dark_amt"""),
+                mix).mappings().fetchone()["sku"]
+            
+            quantities.append({"sku": sku, "quantity": quantity}) 
+            mixes.append(mix)
+        
         connection.execute(
             sqlalchemy.text("""UPDATE potion_inventory
                             SET quantity = quantity + :quantity
                             WHERE sku = :sku"""),
-                            skus, quantities)  
+                            quantities)  
         connection.execute(
             sqlalchemy.text("UPDATE global_inventory \
                             SET num_red_ml = num_red_ml - :red_ml_used, \
