@@ -60,15 +60,10 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                             VALUES (:sku, :quantity)"""),
                             quantities) 
         connection.execute(
-            sqlalchemy.text("UPDATE global_inventory \
-                            SET num_red_ml = num_red_ml - :red_ml_used, \
-                                num_green_ml = num_green_ml - :green_ml_used, \
-                                num_blue_ml = num_blue_ml - :blue_ml_used, \
-                                num_dark_ml = num_dark_ml - :dark_ml_used"),
-                           {"red_ml_used": red_ml_used, 
-                            "green_ml_used": green_ml_used, 
-                            "blue_ml_used": blue_ml_used, 
-                            "dark_ml_used": dark_ml_used})
+            sqlalchemy.text("""INSERT INTO barrel_inventory (num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
+                            VALUES (-:red_ml_used, -:green_ml_used, -:blue_ml_used, -:dark_ml_used)"""),
+                           {"red_ml_used": red_ml_used, "green_ml_used": green_ml_used, 
+                            "blue_ml_used": blue_ml_used, "dark_ml_used": dark_ml_used})
         
     print(f"potions delievered: {potions_delivered}, order_id: {order_id}")
     return "OK"
@@ -83,7 +78,14 @@ def get_bottle_plan():
     
     with db.engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")
+            sqlalchemy.text("""
+                SELECT 
+                    SUM(num_red_ml) as num_red_ml, 
+                    SUM(num_green_ml) as num_green_ml, 
+                    SUM(num_blue_ml) as num_blue_ml, 
+                    SUM(num_dark_ml) as num_dark_ml,
+                    (SELECT SUM(potion_capacity) FROM shop_capacity) as potion_capacity
+                FROM barrel_inventory""")
             ).mappings()
         pot_result = connection.execute(
             sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
@@ -93,11 +95,12 @@ def get_bottle_plan():
                             GROUP BY recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
                                 recipe_book.blue_amt, recipe_book.dark_amt
                             ORDER BY SUM(quantity)""")
-        ).mappings()
+            ).mappings()
         num_potions_result = connection.execute(
             sqlalchemy.text("SELECT SUM(quantity) as num_potions \
                             FROM potion_inventory")
-        ).mappings()
+            ).mappings()
+        
         inventory = result.fetchone()
         num_potions = num_potions_result.fetchone()["num_potions"]
         num_red_ml = inventory["num_red_ml"]

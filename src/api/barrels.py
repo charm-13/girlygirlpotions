@@ -23,7 +23,7 @@ class Barrel(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
-    print(f"attempting to deliver: {barrels_delivered} \n with order_id: {order_id}")
+    print(f"order {order_id} attempting to deliver: {barrels_delivered}")
     
     red_ml = 0
     green_ml = 0
@@ -49,15 +49,14 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             gold_paid += barrel.price*barrel.quantity
         
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text("UPDATE global_inventory \
-                                            SET num_red_ml = num_red_ml + :red_ml, \
-                                                num_green_ml = num_green_ml + :green_ml, \
-                                                num_blue_ml = num_blue_ml + :blue_ml, \
-                                                num_dark_ml = num_dark_ml + :dark_ml, \
-                                                gold = gold - :gold_paid"),
-                            {"red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml, "gold_paid": gold_paid})
+        connection.execute(sqlalchemy.text("""INSERT INTO barrel_inventory (num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
+                                            VALUES (:red_ml, :green_ml, :blue_ml, :dark_ml)"""),
+                            {"red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml})
+        connection.execute(sqlalchemy.text("""INSERT INTO treasury_log (gold)
+                                            VALUES (-:gold_paid)"""),
+                            {"gold_paid": gold_paid})
 
-    print(f"order {order_id} successful! \n delivered: {barrels_delivered}")
+    print(f"order {order_id} successful! \ndelivered: {barrels_delivered}")
     return "OK"
 
 def serious_budget_calculations(gold: int) -> int:
@@ -103,15 +102,20 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             key=lambda x: x.price / x.ml_per_barrel
         ),
     }
-
-    print(f"Sorted catalog based on cost-effectiveness: {sorted_catalog}")
         
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("""SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity, 
-                                                                SUM(num_red_ml+num_green_ml+num_blue_ml+num_dark_ml) AS total_ml
-                                                        FROM global_inventory
-                                                        GROUP BY gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity""")).mappings()
-        inventory = result.fetchone()
+        inventory = connection.execute(
+            sqlalchemy.text("""
+                SELECT
+                    SUM(num_red_ml) as num_red_ml, 
+                    SUM(num_green_ml) as num_green_ml, 
+                    SUM(num_blue_ml) as num_blue_ml, 
+                    SUM(num_dark_ml) as num_dark_ml,
+                    SUM(num_red_ml+num_green_ml+num_blue_ml+num_dark_ml) AS total_ml,
+                    (SELECT SUM(gold) FROM treasury_log) as gold,
+                    (SELECT SUM(ml_capacity) FROM shop_capacity) as ml_capacity
+                FROM barrel_inventory""")
+            ).mappings().fetchone()
         
         gold = inventory["gold"]
         total_red = inventory["num_red_ml"]
@@ -131,7 +135,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     ml_needed["dark"] = max_ml_per_type - total_dark
         
     priority = dict(sorted(ml_needed.items(), key=lambda x:x[1], reverse=True))
-    print(f"Sorted ml required based on need: {priority}")
+    print(f"Sorted ml required based on need: {priority}\n"
+        f"Sorted catalog based on cost-effectiveness: {sorted_catalog}")
     
     # Calculate budget
     budget = round(serious_budget_calculations(gold))

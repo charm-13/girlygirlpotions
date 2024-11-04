@@ -180,12 +180,12 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 
                 purchases.append({"sku": sku, "quantity": quantity, "price per item": price})          
             
-            connection.execute(sqlalchemy.text("""UPDATE global_inventory 
-                                                SET gold = gold + :total_gold_paid"""),
+            connection.execute(sqlalchemy.text("""INSERT INTO treasury_log (gold)
+                                                VALUES (:total_gold_paid)"""),
                             {"total_gold_paid": total_gold_paid})
                 
             print(f"cart {cart_id} bought {purchases} \n"
-                  "\t cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment") 
+                  f"\t cart {cart_id} bought {total_potions_bought} potions and paid {total_gold_paid} gold with {cart_checkout.payment} as payment") 
             
         return {"total_potions_bought": total_potions_bought,
                 "total_gold_paid": total_gold_paid}

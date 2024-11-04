@@ -15,16 +15,19 @@ router = APIRouter(
 def get_inventory():
     """ """
     with db.engine.begin() as connection:
-        result = connection.execute(
-            sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold \
-                            FROM global_inventory")
-        ).mappings()
-        pot_res = connection.execute(
-            sqlalchemy.text("SELECT SUM(quantity) as num_potions \
-                            FROM potion_inventory")
-        ).mappings()
-        inv = result.fetchone()
-        pot_inv = pot_res.fetchone()
+        inv = connection.execute(
+            sqlalchemy.text("""
+                SELECT 
+                    SUM(num_red_ml) as num_red_ml, SUM(num_green_ml) as num_green_ml, 
+                    SUM(num_blue_ml) as num_blue_ml, SUM(num_dark_ml) as num_dark_ml,
+                    (SELECT SUM(gold) FROM treasury_log) as gold
+                FROM barrel_inventory""")
+        ).mappings().fetchone()
+        pot_inv = connection.execute(
+            sqlalchemy.text("""SELECT COALESCE(SUM(quantity), 0) as num_potions 
+                            FROM potion_inventory""")
+        ).mappings().fetchone()
+        
         num_potions = pot_inv["num_potions"]
         red_ml = inv["num_red_ml"]
         green_ml = inv["num_green_ml"]
@@ -34,7 +37,7 @@ def get_inventory():
         gold = inv["gold"]
         
     print(f"Inventory -- num potions: {num_potions}, gold: {gold}, \n"
-          "\t ml in barrels: red = {red_ml}, green = {green_ml}, blue = {blue_ml}, dark = {dark_ml}, total = {total_ml}")
+          f"\t ml in barrels: red = {red_ml}, green = {green_ml}, blue = {blue_ml}, dark = {dark_ml}, total = {total_ml}")
     return {"number_of_potions": num_potions, "ml_in_barrels": total_ml, "gold": gold}
 
 # Gets called once a day
