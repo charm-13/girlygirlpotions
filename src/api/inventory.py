@@ -49,9 +49,26 @@ def get_capacity_plan():
     capacity unit costs 1000 gold.
     """
     
+    potion_cap = 0
+    ml_cap = 0
+    
+    with db.engine.begin() as connection:
+        caps = connection.execute(
+            sqlalchemy.text("""
+                SELECT SUM(potion_capacity) as pot, 
+                       SUM(ml_capacity) as ml,
+                       (SELECT SUM(gold) FROM treasury_log) as gold
+                FROM shop_capacity
+                """)).mappings().fetchone()
+        
+        if caps["ml"] <= 10000 and caps["gold"] >= 2000:
+            ml_cap = 1
+            print(f"Increasing ml capacity by {ml_cap}")
+            
+    
     return {
-        "potion_capacity": 0,
-        "ml_capacity": 0
+        "potion_capacity": potion_cap,
+        "ml_capacity": ml_cap
         }
 
 class CapacityPurchase(BaseModel):
@@ -62,5 +79,24 @@ class CapacityPurchase(BaseModel):
 @router.post("/deliver/{order_id}")
 def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     """ """
+    potion_per_capacity = 50
+    ml_per_capacity = 10000
+    
+    pot_storage = capacity_purchase.potion_capacity * potion_per_capacity
+    ml_storage = capacity_purchase.ml_capacity * ml_per_capacity
+    
+    try:
+        with db.engine.begin() as connection:
+            connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO shop_capacity (potion_capacity, ml_capacity)
+                    VALUES (:pot_storage, :ml_storage)
+                    """),
+                {"pot_storage": pot_storage, "ml_storage": ml_storage})
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {"error": str(e)}
+    
 
     return "OK"
