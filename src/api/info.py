@@ -7,14 +7,13 @@ from src.api import auth
 router = APIRouter(
     prefix="/info",
     tags=["info"],
-    dependencies=[Depends(auth.get_api_key)],
 )
 
 class Timestamp(BaseModel):
     day: str
     hour: int
 
-@router.post("/current_time")
+@router.post("/current_time", dependencies=[Depends(auth.get_api_key)])
 def post_time(timestamp: Timestamp):
     """
     Share current time.
@@ -32,6 +31,7 @@ def post_time(timestamp: Timestamp):
     print(f"it's currently {hour} o'clock on {day}")
     return "OK"
 
+@router.get("/current_time")
 def get_current_time():
     """
     Get the current time.
@@ -40,8 +40,8 @@ def get_current_time():
         time = connection.execute(
             sqlalchemy.text("""SELECT day, hour
                                 FROM time
-                                WHERE id = (SELECT MAX(id) FROM time)""")
-        ).mappings()
+                                ORDER BY id DESC LIMIT 1""")
+        ).mappings().fetchone()
         
         day = time["day"]
         hour = time["hour"]
