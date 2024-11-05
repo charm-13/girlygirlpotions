@@ -126,13 +126,19 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         total_current_ml = inventory["total_ml"]
     
     # Determine need
-    max_ml_per_type = total_ml_capacity / 4
+    min_dark_ml = 0
+    if total_ml_capacity >= 20000:
+        min_dark_ml = 10000
+        
+    max_ml_to_buy = total_ml_capacity - total_current_ml
+    max_ml_per_type = round((total_ml_capacity - min_dark_ml) / 3)
+    
     ml_needed = {"red": 0, "green": 0, "blue": 0, "dark": 0}  # red, green, blue, dark
     
     ml_needed["red"] = max_ml_per_type - total_red
     ml_needed["green"] = max_ml_per_type - total_green
     ml_needed["blue"] = max_ml_per_type - total_blue
-    ml_needed["dark"] = max_ml_per_type - total_dark
+    ml_needed["dark"] = max_ml_to_buy - total_dark  # dark is always the priority
         
     priority = dict(sorted(ml_needed.items(), key=lambda x:x[1], reverse=True))
     print(f"Sorted ml required based on need: {priority}\n"
@@ -143,7 +149,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     
     # Develop the plan
     plan = []
-    max_ml_to_buy = total_ml_capacity - total_current_ml
     print(f"gold: {gold}, budget: {budget}, current ml in inventory: {total_current_ml}, max ml to buy: {max_ml_to_buy}")
     
     for type, ml_need in priority.items():
@@ -151,7 +156,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             break   # if max ml capacity is reached, cannot buy anymore ml
         
         if ml_need <= 0:
-            continue # shouldn't buy this specific potion if there's no need
+            continue # shouldn't buy this specific potion if there's no need    
           
         for barrel in sorted_catalog[type]:
             if barrel.quantity <= 0 or barrel.ml_per_barrel > max_ml_to_buy:
@@ -162,9 +167,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 continue
             
             max_afford = budget // barrel.price
-            if max_afford <= 0:
-                # check for possible loan :)
-                continue
+            if max_afford <= 0 and (barrel.price - budget) > 50:
+                if type != "dark" or barrel.price > gold:
+                    continue
             
             max_purchase = 1
             barrels_needed = (ml_need + barrel.ml_per_barrel - 1) // barrel.ml_per_barrel
