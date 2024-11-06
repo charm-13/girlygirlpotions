@@ -85,6 +85,8 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     pot_storage = capacity_purchase.potion_capacity * potion_per_capacity
     ml_storage = capacity_purchase.ml_capacity * ml_per_capacity
     
+    cost = (capacity_purchase.potion_capacity + capacity_purchase.ml_capacity) * 1000
+    
     try:
         with db.engine.begin() as connection:
             connection.execute(
@@ -93,6 +95,12 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
                     VALUES (:pot_storage, :ml_storage)
                     """),
                 {"pot_storage": pot_storage, "ml_storage": ml_storage})
+            connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO treasury_log (gold)
+                    VALUES (-:cost)
+                    """),
+                {"cost": cost})
     
     except Exception as e:
         print(f"An error occurred: {e}")
