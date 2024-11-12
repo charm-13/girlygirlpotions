@@ -89,13 +89,13 @@ def get_bottle_plan():
             ).mappings()
         pot_result = connection.execute(
             sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
-                                recipe_book.blue_amt, recipe_book.dark_amt
+                                recipe_book.blue_amt, recipe_book.dark_amt, COALESCE(SUM(quantity),0) as quantity
                             FROM recipe_book
-                            JOIN potion_inventory on potion_inventory.sku = recipe_book.sku
+                            LEFT JOIN potion_inventory on potion_inventory.sku = recipe_book.sku
                             GROUP BY recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
                                 recipe_book.blue_amt, recipe_book.dark_amt
-                            ORDER BY SUM(quantity)""")
-            ).mappings()
+                            ORDER BY COALESCE(SUM(quantity),0)""")
+            ).mappings().fetchall()
         num_potions_result = connection.execute(
             sqlalchemy.text("SELECT COALESCE(SUM(quantity),0) as num_potions \
                             FROM potion_inventory")
