@@ -57,16 +57,18 @@ def search_orders(
     try:
         carts = sqlalchemy.Table("carts", sqlalchemy.MetaData(), autoload_with=db.engine)
         carts_items = sqlalchemy.Table("carts_items", sqlalchemy.MetaData(), autoload_with=db.engine)
+        potions = sqlalchemy.Table("recipe_book", sqlalchemy.MetaData(), autoload_with=db.engine)
         
         search = (
             sqlalchemy.select(
                 carts_items.c.id,
                 carts_items.c.item_sku,
-                carts_items.c.quantity,
+                (carts_items.c.quantity * potions.c.price).label("line_item_total"),
                 carts_items.c.time_created,
                 carts.c.customer_name
             )
             .join(carts, carts_items.c.cart_id == carts.c.id)
+            .join(potions, carts_items.c.item_sku == potions.c.sku)
         )
         
         limit = 5 
@@ -109,7 +111,7 @@ def search_orders(
                     "line_item_id": row.id,
                     "item_sku": row.item_sku,
                     "customer_name": row.customer_name,
-                    "line_item_total": row.quantity,
+                    "line_item_total": row.line_item_total,
                     "timestamp": row.time_created,
                 })
                 
