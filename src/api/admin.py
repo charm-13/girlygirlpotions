@@ -21,7 +21,7 @@ def reset():
             sqlalchemy.text("DELETE FROM treasury_log"))
         connection.execute(
             sqlalchemy.text("""INSERT INTO treasury_log (gold)
-                            VALUES (0)"""))
+                            VALUES (100)"""))
         
         connection.execute(
             sqlalchemy.text("DELETE FROM barrel_inventory"))

@@ -97,7 +97,7 @@ def get_bottle_plan():
                             ORDER BY SUM(quantity)""")
             ).mappings()
         num_potions_result = connection.execute(
-            sqlalchemy.text("SELECT SUM(quantity) as num_potions \
+            sqlalchemy.text("SELECT COALESCE(SUM(quantity),0) as num_potions \
                             FROM potion_inventory")
             ).mappings()
         
