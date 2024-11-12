@@ -71,12 +71,42 @@ def serious_budget_calculations(gold: int) -> int:
     
     return budget
 
-def potion_value(need):
+def potion_value(potion, need):
     """
     Assigns weights to each potion type (red, green, blue, dark)
     based on the day and need.
     """
-    return need
+    with db.engine.begin() as connection:
+        time = connection.execute(
+                sqlalchemy.text("""SELECT day, hour
+                                    FROM time
+                                    ORDER BY id DESC LIMIT 1""")
+            ).mappings().fetchone()
+        
+        if time == None:
+            return need
+        
+        day = time["day"]
+        hour = time["hour"]
+        if hour >= 20:
+            return need
+        
+        blacklist = connection.execute(
+                sqlalchemy.text("""SELECT day, potion_type
+                                    FROM blacklist
+                                    WHERE day ILIKE :today
+                                        AND potion_type ILIKE :curr_potion"""),
+                                {"today": day, "curr_potion": potion}
+            ).mappings().fetchone()
+        
+        if blacklist == None:
+            return need
+
+    new_need = need - abs(need)
+    
+    print(f"day: {day}, potion: {potion}, original need: {need}, adjusted need: {new_need}")
+    
+    return new_need
 
 # Gets called once a day
 @router.post("/plan")
@@ -140,7 +170,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     ml_needed["blue"] = max_ml_per_type - total_blue
     ml_needed["dark"] = max_ml_to_buy - total_dark  # dark is always the priority
         
-    priority = dict(sorted(ml_needed.items(), key=lambda x:x[1], reverse=True))
+    priority = dict(sorted(ml_needed.items(), key=lambda x:potion_value(x[0], x[1]), reverse=True))
     print(f"Sorted ml required based on need: {priority}\n"
         f"Sorted catalog based on cost-effectiveness: {sorted_catalog}")
     

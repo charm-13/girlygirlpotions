@@ -10,18 +10,38 @@ def get_catalog():
     """
     Provides all available potions.
     """
-    #TODO: implement better logic for what to offer when
     with db.engine.begin() as connection:
         inv_result = connection.execute(
-            sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.name, SUM(potion_inventory.quantity) as quant, recipe_book.price, 
-                                recipe_book.red_amt, recipe_book.green_amt, recipe_book.blue_amt, recipe_book.dark_amt 
+            sqlalchemy.text("""
+                            WITH time AS (
+                                SELECT day 
+                                FROM time
+                                ORDER BY id DESC LIMIT 1
+                            ),
+                            avg_sold_today AS (
+                                SELECT sku, avg_sold
+                                FROM demand_view
+                                JOIN time ON demand_view.day = time.day
+                            )
+                            SELECT 
+                                recipe_book.sku, recipe_book.name, 
+                                SUM(potion_inventory.quantity) as quant, recipe_book.price, 
+                                recipe_book.red_amt, recipe_book.green_amt, 
+                                recipe_book.blue_amt, recipe_book.dark_amt 
                             FROM recipe_book
                             JOIN potion_inventory ON potion_inventory.sku = recipe_book.sku
-                            GROUP BY recipe_book.sku, recipe_book.name, recipe_book.price, 
-                                recipe_book.red_amt, recipe_book.green_amt, recipe_book.blue_amt, recipe_book.dark_amt
+                            LEFT JOIN avg_sold_today ON avg_sold_today.sku = recipe_book.sku
+                            GROUP BY 
+                                recipe_book.sku, recipe_book.name, 
+                                recipe_book.price, avg_sold_today.avg_sold,
+                                recipe_book.red_amt, recipe_book.green_amt, 
+                                recipe_book.blue_amt, recipe_book.dark_amt
                             HAVING SUM(potion_inventory.quantity) > 0
-                            ORDER BY SUM(potion_inventory.quantity) desc
-                            LIMIT 6""")
+                            ORDER BY 
+                                COALESCE(avg_sold_today.avg_sold, 0) desc,
+                                SUM(potion_inventory.quantity) desc
+                            LIMIT 6
+                            """)
         ).mappings()
         
     catalog = []
