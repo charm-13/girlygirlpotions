@@ -53,20 +53,78 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+    
+    try:
+        carts = sqlalchemy.Table("carts", sqlalchemy.MetaData(), autoload_with=db.engine)
+        carts_items = sqlalchemy.Table("carts_items", sqlalchemy.MetaData(), autoload_with=db.engine)
+        
+        search = (
+            sqlalchemy.select(
+                carts_items.c.id,
+                carts_items.c.item_sku,
+                carts_items.c.quantity,
+                carts_items.c.time_created,
+                carts.c.customer_name
+            )
+            .join(carts, carts_items.c.cart_id == carts.c.id)
+        )
+        
+        limit = 5 
+        offset = 0
+        if search_page != "":
+            offset = int(search_page)
+        if potion_sku != "":
+            search = search.where(carts_items.c.item_sku.ilike(f"%{potion_sku}%"))
+        if customer_name != "":
+            search = search.where(carts.c.customer_name.ilike(f"%{customer_name}%"))
+        
+        match sort_col:
+            case search_sort_options.customer_name:
+                sort = carts.c.customer_name
+            case search_sort_options.item_sku:
+                sort = carts_items.c.item_sku
+            case search_sort_options.line_item_total:
+                sort = carts_items.c.quantity
+            case search_sort_options.timestamp:  
+                sort = carts_items.c.time_created
+            case _:
+                raise ValueError(f"sort_col was not in one of the listed options: customer_name, item_sku, line_item_total, or timestamp. Given {sort_col}")      
+        
+        match sort_order:
+            case search_sort_order.desc:
+                order_by = sqlalchemy.desc(sort)
+            case search_sort_order.asc:
+                order_by = sort
+            case _:
+                raise ValueError(f"sort_order was not in one of the listed options: asc, or desc. Given {sort_order}")
+            
+        search = search.limit(limit).offset(offset).order_by(order_by)
+    
+        with db.engine.begin() as connection:
+            result = connection.execute(search).fetchall()
+            
+            json = []
+            for row in result:
+                json.append({
+                    "line_item_id": row.id,
+                    "item_sku": row.item_sku,
+                    "customer_name": row.customer_name,
+                    "line_item_total": row.quantity,
+                    "timestamp": row.time_created,
+                })
+                
+        previous_page = offset - limit if offset > 0 else None
+        next_page = offset + limit if len(result) == limit else None
 
-    return {
-        "previous": "",
-        "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
-            }
-        ],
-    }
+        return {
+            "previous": str(previous_page) if previous_page is not None else "",
+            "next": str(next_page) if next_page is not None else "",
+            "results": json,
+        }
+    
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return {"success": False, "error": str(e)}
 
 
 class Customer(BaseModel):
