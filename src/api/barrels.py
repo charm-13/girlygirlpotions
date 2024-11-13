@@ -176,6 +176,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     
     # Calculate budget
     budget = round(serious_budget_calculations(gold))
+    spent = 0
     
     # Develop the plan
     plan = []
@@ -197,9 +198,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 continue
             
             max_afford = budget // barrel.price
-            if max_afford <= 0 and (barrel.price - budget) > 50:
-                if barrel.price > gold:
-                    continue
+            if max_afford <= 0 and barrel.price > (gold - spent):
+                continue
             
             max_purchase = 1
             barrels_needed = (ml_need + barrel.ml_per_barrel - 1) // barrel.ml_per_barrel
@@ -207,6 +207,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if purchase_amt > 0:
                 plan.append({"sku": barrel.sku, "quantity": purchase_amt})
                 budget -= barrel.price*purchase_amt
+                spent += barrel.price*purchase_amt
                 max_ml_to_buy -= barrel.ml_per_barrel
                 break
         
