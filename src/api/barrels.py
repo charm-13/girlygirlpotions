@@ -198,7 +198,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             
             max_afford = budget // barrel.price
             if max_afford <= 0 and (barrel.price - budget) > 50:
-                if type != "dark" or barrel.price > gold:
+                if barrel.price > gold:
                     continue
             
             max_purchase = 1
