@@ -63,7 +63,12 @@ def get_capacity_plan():
         
         if caps["ml"] <= 10000 and caps["gold"] >= 2000:
             ml_cap = 1
-            print(f"Increasing ml capacity by {ml_cap}")
+            print(f"Increasing ml capacity by {ml_cap}, and potion capacity by {potion_cap}")
+            
+        if caps["gold"] >= 10000 and caps["ml"] < 40000:
+            potion_cap = 1
+            ml_cap = 1
+            print(f"Increasing ml capacity by {ml_cap}, and potion capacity by {potion_cap}")
             
     
     return {
