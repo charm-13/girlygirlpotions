@@ -88,13 +88,14 @@ def get_bottle_plan():
                 FROM barrel_inventory""")
             ).mappings()
         pot_result = connection.execute(
-            sqlalchemy.text("""SELECT recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
+            sqlalchemy.text("""SELECT 
+                                recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt,
                                 recipe_book.blue_amt, recipe_book.dark_amt, COALESCE(SUM(quantity),0) as quantity
                             FROM recipe_book
                             LEFT JOIN potion_inventory on potion_inventory.sku = recipe_book.sku
                             GROUP BY recipe_book.sku, recipe_book.red_amt, recipe_book.green_amt, 
-                                recipe_book.blue_amt, recipe_book.dark_amt
-                            ORDER BY COALESCE(SUM(quantity),0)""")
+                                recipe_book.blue_amt, recipe_book.dark_amt, recipe_book.demand
+                            ORDER BY recipe_book.demand desc, COALESCE(SUM(quantity),0)""")
             ).mappings().fetchall()
         num_potions_result = connection.execute(
             sqlalchemy.text("SELECT COALESCE(SUM(quantity),0) as num_potions \
@@ -110,6 +111,7 @@ def get_bottle_plan():
         max_potions = inventory["potion_capacity"]
         
     max_potions_to_bottle = max_potions - num_potions
+    max_per_type = max_potions // 5
     print(f"max potions to bottle: {max_potions_to_bottle}")
     
     # Develop plan
@@ -152,7 +154,7 @@ def get_bottle_plan():
         if dark_used > 0:
             dark_capability = num_dark_ml // dark_used
             
-        num_to_bottle = min(red_capability, green_capbility, blue_capability, dark_capability)
+        num_to_bottle = min(red_capability, green_capbility, blue_capability, dark_capability, max_per_type)
         
         max_potions_to_bottle -= num_to_bottle
         num_red_ml -= red_used*num_to_bottle
