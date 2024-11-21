@@ -111,7 +111,6 @@ def get_bottle_plan():
         max_potions = inventory["potion_capacity"]
         
     max_potions_to_bottle = max_potions - num_potions
-    max_per_type = max_potions // 5
     print(f"max potions to bottle: {max_potions_to_bottle}")
     
     # Develop plan
@@ -122,7 +121,8 @@ def get_bottle_plan():
         if num_red_ml+num_green_ml+num_blue_ml+num_dark_ml < 100:
             break   # not enough ml for 1 potion
         
-        print(f"potion: {potion}")
+        max_per_type = (max_potions // 6) - potion["quantity"]
+        print(f"potion: {potion}, max to bottle: {max_per_type}")
         sku = potion["sku"]
         red_used = potion["red_amt"]
         green_used = potion["green_amt"]
